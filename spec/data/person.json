@@ -1,0 +1,11 @@
+{
+  "description":"A person",
+  "type":"object",
+  "properties":{
+    "name":{"type":"string"},
+    "age" :{
+      "type":"integer",
+      "maximum":125
+    }
+  }
+}

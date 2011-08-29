@@ -1,0 +1,5 @@
+{
+  "description":"An adult",
+  "properties":{"age":{"minimum": 21}},
+  "extends":"person.json"
+}
