@@ -1,11 +1,11 @@
 # Copyright 2010 Google Inc
-# 
+#
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
 #    You may obtain a copy of the License at
-# 
+#
 #        http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 #    Unless required by applicable law or agreed to in writing, software
 #    distributed under the License is distributed on an "AS IS" BASIS,
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -82,6 +82,14 @@ describe AutoParse::Instance, 'with the geo schema' do
       "longitude" => -122.084
     })
     instance.should be_valid
+  end
+
+  it 'should not accept an invalid geographic coordinate input' do
+    instance = @parser.new({
+      "latitude" => "not",
+      "longitude" => "valid"
+    })
+    instance.should_not be_valid
   end
 
   it 'should accept extra fields' do
@@ -481,6 +489,7 @@ describe AutoParse::Instance, 'with the card schema' do
       "givenName" => "Robert",
       "familyName" => "Aman",
       "adr" => {
+        "locality" => "Lavington",
         "region" => "Nairobi",
         "country-name" => "Kenya"
       },
@@ -489,6 +498,8 @@ describe AutoParse::Instance, 'with the card schema' do
         "longitude" => 36.771584
       }
     })
+    instance.adr.should be_valid
+    instance.geo.should be_valid
     instance.should be_valid
   end
 
@@ -507,6 +518,7 @@ describe AutoParse::Instance, 'with the card schema' do
       "familyName" => "Aman",
       "adr" => {
         "extended-address" => "Apt 2.71828",
+        "locality" => "Lavington",
         "region" => "Nairobi",
         "country-name" => "Kenya"
       },
@@ -515,7 +527,23 @@ describe AutoParse::Instance, 'with the card schema' do
         "longitude" => 36.771584
       }
     })
-    instance.should be_valid
+    instance.adr.should_not be_valid
+    instance.should_not be_valid
+    instance = @card_parser.new({
+      "givenName" => "Robert",
+      "familyName" => "Aman",
+      "adr" => {
+        "locality" => "Lavington",
+        "region" => "Nairobi",
+        "country-name" => "Kenya"
+      },
+      "geo" => {
+        "latitude" => "not",
+        "longitude" => "valid"
+      }
+    })
+    instance.geo.should_not be_valid
+    instance.should_not be_valid
   end
 
   it 'should expose values via generated accessors' do
@@ -611,5 +639,149 @@ describe AutoParse::Instance, 'with the card schema' do
       "familyName" => "Aman"
     })
     instance.to_json.should == '{"givenName":"Robert","familyName":"Aman"}'
+  end
+end
+
+describe AutoParse::Instance, 'with the calendar schema' do
+  before do
+    @geo_uri = Addressable::URI.new(
+      :scheme => 'file',
+      :host => '',
+      :path => File.expand_path(File.join(spec_dir, './data/geo.json'))
+    )
+    @geo_schema_data =
+      JSON.parse(File.open(@geo_uri.path, 'r') { |f| f.read })
+    @geo_parser = AutoParse.generate(@geo_schema_data, @geo_uri)
+
+    @calendar_uri = Addressable::URI.new(
+      :scheme => 'file',
+      :host => '',
+      :path => File.expand_path(File.join(spec_dir, './data/calendar.json'))
+    )
+    @calendar_schema_data =
+      JSON.parse(File.open(@calendar_uri.path, 'r') { |f| f.read })
+    @calendar_parser = AutoParse.generate(@calendar_schema_data, @calendar_uri)
+  end
+
+  it 'should accept a valid calendar input' do
+    instance = @calendar_parser.new({
+      "dtstart" => "1592-03-14T00:00:00Z",
+      "dtend" => "1592-03-14T23:59:59Z",
+      "summary" => "Pi Day",
+      "location" => "Googleplex",
+      "url" => "http://www.piday.org/",
+      "rrule" => "FREQ=YEARLY"
+    })
+    instance.should be_valid
+  end
+
+  it 'should accept extra fields' do
+    instance = @calendar_parser.new({
+      "dtstart" => "1592-03-14T00:00:00Z",
+      "dtend" => "1592-03-14T23:59:59Z",
+      "summary" => "Pi Day",
+      "location" => "Googleplex",
+      "url" => "http://www.piday.org/",
+      "rrule" => "FREQ=YEARLY",
+      "extra" => "bonus!"
+    })
+    instance.should be_valid
+  end
+
+  it 'should accept a calendar input with an externally referenced schema' do
+    instance = @calendar_parser.new({
+      "dtstart" => "1592-03-14T00:00:00Z",
+      "dtend" => "1592-03-14T23:59:59Z",
+      "summary" => "Pi Day",
+      "location" => "Googleplex",
+      "url" => "http://www.piday.org/",
+      "rrule" => "FREQ=YEARLY",
+      "geo" => {
+        "latitude" => 37.422,
+        "longitude" => -122.084
+      }
+    })
+    instance.geo.should be_valid
+    instance.should be_valid
+  end
+
+  it 'should not validate a calendar input when external schema is invalid' do
+    instance = @calendar_parser.new({
+      "dtstart" => "1592-03-14T00:00:00Z",
+      "dtend" => "1592-03-14T23:59:59Z",
+      "summary" => "Pi Day",
+      "location" => "Googleplex",
+      "url" => "http://www.piday.org/",
+      "rrule" => "FREQ=YEARLY",
+      "geo" => {
+        "latitude" => "not",
+        "longitude" => "valid"
+      }
+    })
+    instance.geo.should_not be_valid
+    instance.should_not be_valid
+  end
+
+  it 'should expose values via generated accessors' do
+    instance = @calendar_parser.new({
+      "dtstart" => "1592-03-14T00:00:00Z",
+      "dtend" => "1592-03-14T23:59:59Z",
+      "summary" => "Pi Day",
+      "location" => "Googleplex",
+      "url" => "http://www.piday.org/",
+      "rrule" => "FREQ=YEARLY",
+      "geo" => {
+        "latitude" => 37.422,
+        "longitude" => -122.084
+      }
+    })
+    instance.dtstart.should == Time.utc(1592, 3, 14)
+    instance.dtend.should == Time.utc(1592, 3, 14, 23, 59, 59)
+    instance.summary.should == "Pi Day"
+    instance.location.should == "Googleplex"
+    instance.url.should == Addressable::URI.parse("http://www.piday.org/")
+    instance.rrule.should == "FREQ=YEARLY"
+    instance.geo.latitude.should == 37.422
+    instance.geo.longitude.should == -122.084
+  end
+
+  it 'should be coerceable to a Hash value' do
+    instance = @calendar_parser.new({
+      "dtstart" => "1592-03-14T00:00:00Z",
+      "dtend" => "1592-03-14T23:59:59Z",
+      "summary" => "Pi Day",
+      "location" => "Googleplex",
+      "url" => "http://www.piday.org/",
+      "rrule" => "FREQ=YEARLY",
+      "geo" => {
+        "latitude" => 37.422,
+        "longitude" => -122.084
+      }
+    })
+    instance.to_hash.should == {
+      "dtstart" => "1592-03-14T00:00:00Z",
+      "dtend" => "1592-03-14T23:59:59Z",
+      "summary" => "Pi Day",
+      "location" => "Googleplex",
+      "url" => "http://www.piday.org/",
+      "rrule" => "FREQ=YEARLY",
+      "geo" => {
+        "latitude" => 37.422,
+        "longitude" => -122.084
+      }
+    }
+  end
+
+  it 'should convert to a JSON string' do
+    instance = @calendar_parser.new({
+      "dtstart" => "1592-03-14T00:00:00Z",
+      "dtend" => "1592-03-14T23:59:59Z",
+      "summary" => "Pi Day"
+    })
+    instance.to_json.should == (
+      '{"dtend":"1592-03-14T23:59:59Z",' +
+      '"dtstart":"1592-03-14T00:00:00Z",'+
+      '"summary":"Pi Day"}'
+    )
   end
 end

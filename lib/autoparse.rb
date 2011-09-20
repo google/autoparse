@@ -82,11 +82,19 @@ module AutoParse
             property_name, property_key, property_schema
           )
         else
-          # Either type 'any' or we don't know what this is,
-          # default to anything goes.
-          define_any_property(
-            property_name, property_key, property_schema
-          )
+          if property_schema['$ref']
+            # Externally referenced properties may define their
+            # type in the external schema.
+            define_ref_property(
+              property_name, property_key, property_schema
+            )
+          else
+            # Either type 'any' or we don't know what this is,
+            # default to anything goes.
+            define_any_property(
+              property_name, property_key, property_schema
+            )
+          end
         end
       end
 

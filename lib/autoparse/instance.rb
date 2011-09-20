@@ -14,6 +14,7 @@
 
 
 require 'json'
+require 'time'
 require 'autoparse/inflection'
 require 'addressable/uri'
 
@@ -203,8 +204,8 @@ module AutoParse
           schema_name = schema_data['items']['$ref']
           # FIXME: Vestigial bits need to be replaced with a more viable
           # lookup system.
-          if api.schemas[schema_name]
-            schema_class = api.schemas[schema_name]
+          if AutoParse.schemas[schema_name]
+            schema_class = AutoParse.schemas[schema_name]
             array.map! do |item|
               schema_class.new(item)
             end
@@ -231,6 +232,37 @@ module AutoParse
     end
 
     def self.define_object_property(property_name, key, schema_data)
+      # TODO finish this up...
+      if schema_data['$ref']
+        schema_uri = self.uri + Addressable::URI.parse(schema_data['$ref'])
+        schema = AutoParse.schemas[schema_uri]
+        if schema == nil
+          raise ArgumentError,
+            "Could not find schema: #{schema_data['$ref']} " +
+            "Referenced schema must be parsed first."
+        end
+      else
+        # Anonymous schema
+        schema = AutoParse.generate(schema_data)
+      end
+      define_method(property_name) do
+        schema.new(self[key] || schema_data['default'])
+      end
+    end
+
+    def self.validate_ref_property(property_value, schema_data, schema=nil)
+      schema_uri = self.uri + Addressable::URI.parse(schema_data['$ref'])
+      schema = AutoParse.schemas[schema_uri]
+      if schema == nil
+        raise ArgumentError,
+          "Could not find schema: #{schema_data['$ref']} " +
+          "Referenced schema must be parsed first."
+      end
+      external_schema_data = schema.data
+      return self.validate_property_value(property_value, external_schema_data)
+    end
+
+    def self.define_ref_property(property_name, key, schema_data)
       # TODO finish this up...
       if schema_data['$ref']
         schema_uri = self.uri + Addressable::URI.parse(schema_data['$ref'])
@@ -295,9 +327,15 @@ module AutoParse
           property_value, schema_data
         )
       else
-        # Either type 'any' or we don't know what this is,
-        # default to anything goes. Validation of an 'any' property always
-        # succeeds.
+        if schema_data['$ref']
+          return false unless self.validate_ref_property(
+            property_value, schema_data
+          )
+        else
+          # Either type 'any' or we don't know what this is,
+          # default to anything goes. Validation of an 'any' property always
+          # succeeds.
+        end
       end
       return true
     end
