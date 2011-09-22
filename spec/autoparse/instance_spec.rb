@@ -323,6 +323,7 @@ describe AutoParse::Instance, 'with the adult schema' do
     @person_schema_data =
       JSON.parse(File.open(@person_uri.path, 'r') { |f| f.read })
     @person_parser = AutoParse.generate(@person_schema_data, @person_uri)
+
     @adult_uri = Addressable::URI.new(
       :scheme => 'file',
       :host => '',
@@ -408,6 +409,122 @@ describe AutoParse::Instance, 'with the adult schema' do
       "age" => 29
     })
     instance.to_json.should == '{"name":"Bob Aman","age":29}'
+  end
+end
+
+describe AutoParse::Instance, 'with the positive schema' do
+  before do
+    @positive_uri = Addressable::URI.new(
+      :scheme => 'file',
+      :host => '',
+      :path => File.expand_path(File.join(spec_dir, './data/positive.json'))
+    )
+    @positive_schema_data =
+      JSON.parse(File.open(@positive_uri.path, 'r') { |f| f.read })
+    @positive_parser = AutoParse.generate(@positive_schema_data, @positive_uri)
+  end
+
+  it 'should not allow instantiation' do
+    (lambda do
+      instance = @positive_parser.new(-1000)
+    end).should raise_error(TypeError)
+  end
+
+  it 'should not allow instantiation, even for a valid positive integer' do
+    (lambda do
+      instance = @positive_parser.new(1000)
+    end).should raise_error(TypeError)
+  end
+end
+
+describe AutoParse::Instance, 'with the account schema' do
+  before do
+    @positive_uri = Addressable::URI.new(
+      :scheme => 'file',
+      :host => '',
+      :path => File.expand_path(File.join(spec_dir, './data/positive.json'))
+    )
+    @positive_schema_data =
+      JSON.parse(File.open(@positive_uri.path, 'r') { |f| f.read })
+    @positive_parser = AutoParse.generate(@positive_schema_data, @positive_uri)
+
+    @account_uri = Addressable::URI.new(
+      :scheme => 'file',
+      :host => '',
+      :path => File.expand_path(File.join(spec_dir, './data/account.json'))
+    )
+    @account_schema_data =
+      JSON.parse(File.open(@account_uri.path, 'r') { |f| f.read })
+    @account_parser = AutoParse.generate(@account_schema_data, @account_uri)
+  end
+
+  it 'should accept a valid account input' do
+    instance = @account_parser.new({
+      "accountNumber" => "12345",
+      "balance" => 1000
+    })
+    instance.should be_valid
+  end
+
+  it 'should accept extra fields' do
+    instance = @account_parser.new({
+      "accountNumber" => "12345",
+      "balance" => 1000,
+      "extra" => "bonus!"
+    })
+    instance.should be_valid
+  end
+
+  it 'should validate an account with a zero balance' do
+    instance = @account_parser.new({
+      "accountNumber" => "12345",
+      "balance" => 0
+    })
+    instance.should be_valid
+  end
+
+  it 'should not validate a negative account balance' do
+    instance = @account_parser.new({
+      "accountNumber" => "12345",
+      "balance" => -1000
+    })
+    instance.should_not be_valid
+  end
+
+  it 'should not accept an invalid account input' do
+    instance = @account_parser.new({
+      "accountNumber" => "12345",
+      "balance" => "bogus"
+    })
+    instance.should_not be_valid
+  end
+
+  it 'should expose values via generated accessors' do
+    instance = @account_parser.new({
+      "accountNumber" => "12345",
+      "balance" => 1000
+    })
+    instance.account_number.should == "12345"
+    instance.balance.should == 1000
+  end
+
+  it 'should be coerceable to a Hash value' do
+    instance = @account_parser.new({
+      "accountNumber" => "12345",
+      "balance" => 1000
+    })
+    instance.to_hash.should == {
+      "accountNumber" => "12345",
+      "balance" => 1000
+    }
+  end
+
+  it 'should convert to a JSON string' do
+    instance = @account_parser.new({
+      "accountNumber" => "12345",
+      "balance" => 1000
+    })
+    instance.to_json.should == '{"accountNumber":"12345","balance":1000}'
   end
 end
 

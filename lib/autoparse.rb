@@ -56,6 +56,17 @@ module AutoParse
           property_schema = property_super_schema.merge(property_schema)
         end
         self.properties[property_key] = property_schema
+        if property_schema['$ref']
+          schema_uri =
+            self.uri + Addressable::URI.parse(property_schema['$ref'])
+          schema = AutoParse.schemas[schema_uri]
+          if schema == nil
+            raise ArgumentError,
+              "Could not find schema: #{property_schema['$ref']} " +
+              "Referenced schema must be parsed first."
+          end
+          property_schema = schema.data
+        end
         case property_schema['type']
         when 'string'
           define_string_property(
@@ -82,19 +93,11 @@ module AutoParse
             property_name, property_key, property_schema
           )
         else
-          if property_schema['$ref']
-            # Externally referenced properties may define their
-            # type in the external schema.
-            define_ref_property(
-              property_name, property_key, property_schema
-            )
-          else
-            # Either type 'any' or we don't know what this is,
-            # default to anything goes.
-            define_any_property(
-              property_name, property_key, property_schema
-            )
-          end
+          # Either type 'any' or we don't know what this is,
+          # default to anything goes.
+          define_any_property(
+            property_name, property_key, property_schema
+          )
         end
       end
 

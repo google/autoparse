@@ -1,0 +1,8 @@
+{
+  "description":"A bank account",
+  "type":"object",
+  "properties":{
+    "accountNumber":{"type":"string"},
+    "balance" :{"$ref" : "positive.json"}
+  }
+}
