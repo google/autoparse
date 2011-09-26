@@ -21,7 +21,9 @@ require 'addressable/uri'
 module AutoParse
   class Instance
     def self.uri
-      return @uri ||= nil
+      return (@uri ||=
+        (@schema_data ? Addressable::URI.parse(@schema_data['id']) : nil)
+      )
     end
 
     def self.properties
@@ -218,32 +220,42 @@ module AutoParse
       end
     end
 
-    def self.validate_object_property(property_value, schema_data, schema=nil)
+    def self.validate_object_property(property_value, schema_data)
       if property_value.kind_of?(Instance)
         return property_value.valid?
-      elsif schema != nil && schema.kind_of?(Class)
-        return schema.new(property_value).valid?
       else
-        # This is highly ineffecient, but hard to avoid given the schema is
-        # anonymous.
-        schema = AutoParse.generate(schema_data)
+        # This is highly ineffecient, but currently hard to avoid given the
+        # schema is anonymous, making lookups very difficult.
+        if schema_data.has_key?('id')
+          schema = AutoParse.generate(schema_data)
+        else
+          # If the schema has no ID, it inherits the ID from the parent schema,
+          # which should be `self`.
+          schema = AutoParse.generate(schema_data, self.uri)
+        end
         return schema.new(property_value).valid?
       end
     end
 
     def self.define_object_property(property_name, key, schema_data)
-      # TODO finish this up...
-      if schema_data['$ref']
-        schema_uri = self.uri + Addressable::URI.parse(schema_data['$ref'])
-        schema = AutoParse.schemas[schema_uri]
-        if schema == nil
-          raise ArgumentError,
-            "Could not find schema: #{schema_data['$ref']}. " +
-            "Referenced schema must be parsed first."
-        end
+      if schema_data.kind_of?(Class) &&
+          schema_data.ancestors.include?(Instance)
+        # This is a bit of not-entirely-elegant dynamicly-typed optimization.
+        # The class that called us has helpfully parsed the schema already,
+        # so we're avoiding a potentially lossy repetition of that step.
+        schema = schema_data
+        schema_data = schema.data
+      elsif schema_data['$ref']
+        raise ArgumentError, "External reference was not resolved."
       else
-        # Anonymous schema
-        schema = AutoParse.generate(schema_data)
+        # Anonymous schema.
+        if schema_data.has_key?('id')
+          schema = AutoParse.generate(schema_data)
+        else
+          # If the schema has no ID, it inherits the ID from the parent schema,
+          # which should be `self`.
+          schema = AutoParse.generate(schema_data, self.uri)
+        end
       end
       define_method(property_name) do
         schema.new(self[key] || schema_data['default'])
@@ -397,7 +409,7 @@ module AutoParse
     end
 
     def to_json
-      return JSON.generate(self.to_hash)
+      return ::JSON.generate(self.to_hash)
     end
 
     ##

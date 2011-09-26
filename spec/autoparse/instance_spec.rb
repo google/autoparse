@@ -26,6 +26,10 @@ describe AutoParse::Instance, 'with an empty schema' do
     @parser = AutoParse::EMPTY_SCHEMA
   end
 
+  it 'should have a nil URI' do
+    @parser.uri.should be_nil
+  end
+
   it 'should accept all inputs' do
     instance = @parser.new({
       "this" => "doesn't",
@@ -74,6 +78,10 @@ describe AutoParse::Instance, 'with the geo schema' do
     )
     @schema_data = JSON.parse(File.open(@uri.path, 'r') { |f| f.read })
     @parser = AutoParse.generate(@schema_data, @uri)
+  end
+
+  it 'should have the correct URI' do
+    @parser.uri.should === @uri
   end
 
   it 'should accept a valid geographic coordinate input' do
@@ -130,7 +138,6 @@ describe AutoParse::Instance, 'with the geo schema' do
   end
 end
 
-
 describe AutoParse::Instance, 'with the address schema' do
   before do
     @uri = Addressable::URI.new(
@@ -140,6 +147,10 @@ describe AutoParse::Instance, 'with the address schema' do
     )
     @schema_data = JSON.parse(File.open(@uri.path, 'r') { |f| f.read })
     @parser = AutoParse.generate(@schema_data, @uri)
+  end
+
+  it 'should have the correct URI' do
+    @parser.uri.should === @uri
   end
 
   it 'should accept a valid address input' do
@@ -233,6 +244,10 @@ describe AutoParse::Instance, 'with the person schema' do
     )
     @schema_data = JSON.parse(File.open(@uri.path, 'r') { |f| f.read })
     @parser = AutoParse.generate(@schema_data, @uri)
+  end
+
+  it 'should have the correct URI' do
+    @parser.uri.should === @uri
   end
 
   it 'should accept a valid person input' do
@@ -334,6 +349,11 @@ describe AutoParse::Instance, 'with the adult schema' do
     @adult_parser = AutoParse.generate(@adult_schema_data, @adult_uri)
   end
 
+  it 'should have the correct URI' do
+    @person_parser.uri.should === @person_uri
+    @adult_parser.uri.should === @adult_uri
+  end
+
   it 'should accept a valid person input' do
     instance = @adult_parser.new({
       "name" => "Bob Aman",
@@ -424,6 +444,10 @@ describe AutoParse::Instance, 'with the positive schema' do
     @positive_parser = AutoParse.generate(@positive_schema_data, @positive_uri)
   end
 
+  it 'should have the correct URI' do
+    @positive_parser.uri.should === @positive_uri
+  end
+
   it 'should not allow instantiation' do
     (lambda do
       instance = @positive_parser.new(-1000)
@@ -456,6 +480,11 @@ describe AutoParse::Instance, 'with the account schema' do
     @account_schema_data =
       JSON.parse(File.open(@account_uri.path, 'r') { |f| f.read })
     @account_parser = AutoParse.generate(@account_schema_data, @account_uri)
+  end
+
+  it 'should have the correct URI' do
+    @positive_parser.uri.should === @positive_uri
+    @account_parser.uri.should === @account_uri
   end
 
   it 'should accept a valid account input' do
@@ -556,6 +585,39 @@ describe AutoParse::Instance, 'with the card schema' do
     @card_schema_data =
       JSON.parse(File.open(@card_uri.path, 'r') { |f| f.read })
     @card_parser = AutoParse.generate(@card_schema_data, @card_uri)
+  end
+
+  it 'should have the correct URI' do
+    @address_parser.uri.should === @address_uri
+    @geo_parser.uri.should === @geo_uri
+    @card_parser.uri.should === @card_uri
+  end
+
+  it 'should have the correct URI for anonymous nested objects' do
+    instance = @card_parser.new({
+      "givenName" => "Robert",
+      "familyName" => "Aman",
+      "org" => {
+        "organizationName" => "Google, Inc.",
+        "organizationUnit" => "Developer Relations"
+      }
+    })
+    # Anonymous schemas inherit the parent schema's URI.
+    instance.org.class.uri.should === @card_uri
+  end
+
+  it 'should have the correct URI for external nested objects' do
+    instance = @card_parser.new({
+      "givenName" => "Robert",
+      "familyName" => "Aman",
+      "adr" => {
+        "locality" => "Lavington",
+        "region" => "Nairobi",
+        "country-name" => "Kenya"
+      }
+    })
+    # External schemas have their own URI.
+    instance.adr.class.uri.should === @address_uri
   end
 
   it 'should accept a valid card input' do
@@ -778,6 +840,11 @@ describe AutoParse::Instance, 'with the calendar schema' do
     @calendar_schema_data =
       JSON.parse(File.open(@calendar_uri.path, 'r') { |f| f.read })
     @calendar_parser = AutoParse.generate(@calendar_schema_data, @calendar_uri)
+  end
+
+  it 'should have the correct URI' do
+    @geo_parser.uri.should === @geo_uri
+    @calendar_parser.uri.should === @calendar_uri
   end
 
   it 'should accept a valid calendar input' do

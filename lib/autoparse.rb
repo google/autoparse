@@ -56,6 +56,7 @@ module AutoParse
           property_schema = property_super_schema.merge(property_schema)
         end
         self.properties[property_key] = property_schema
+        ref_schema = nil
         if property_schema['$ref']
           if self.uri
             schema_uri =
@@ -63,13 +64,16 @@ module AutoParse
           else
             schema_uri = Addressable::URI.parse(property_schema['$ref'])
           end
-          schema = AutoParse.schemas[schema_uri]
-          if schema == nil
+          ref_schema = AutoParse.schemas[schema_uri]
+          if ref_schema.uri != schema_uri
+            raise ArgumentError, "Schema URI mismatch."
+          end
+          if ref_schema == nil
             raise ArgumentError,
               "Could not find schema: #{property_schema['$ref']}. " +
               "Referenced schema must be parsed first."
           end
-          property_schema = schema.data
+          property_schema = ref_schema.data
         end
         case property_schema['type']
         when 'string'
@@ -93,9 +97,16 @@ module AutoParse
             property_name, property_key, property_schema
           )
         when 'object'
-          define_object_property(
-            property_name, property_key, property_schema
-          )
+          if ref_schema
+            # Don't reparse if we've already done a parse or lookup.
+            define_object_property(
+              property_name, property_key, ref_schema
+            )
+          else
+            define_object_property(
+              property_name, property_key, property_schema
+            )
+          end
         else
           # Either type 'any' or we don't know what this is,
           # default to anything goes.
@@ -192,9 +203,6 @@ module AutoParse
 
       if schema_data['dependencies']
         for dependency_key, dependency_data in schema_data['dependencies']
-          if dependency_data.kind_of?(Hash)
-            dependency_data = AutoParse.generate(dependency_data)
-          end
           self.property_dependencies[dependency_key] = dependency_data
         end
       end
