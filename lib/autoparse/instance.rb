@@ -238,7 +238,7 @@ module AutoParse
         schema = AutoParse.schemas[schema_uri]
         if schema == nil
           raise ArgumentError,
-            "Could not find schema: #{schema_data['$ref']} " +
+            "Could not find schema: #{schema_data['$ref']}. " +
             "Referenced schema must be parsed first."
         end
       else
@@ -275,7 +275,7 @@ module AutoParse
         schema = AutoParse.schemas[schema_uri]
         if schema == nil
           raise ArgumentError,
-            "Could not find schema: #{schema_data['$ref']} " +
+            "Could not find schema: #{schema_data['$ref']}. " +
             "Referenced schema must be parsed first."
         end
         schema_data = schema.data

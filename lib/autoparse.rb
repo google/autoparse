@@ -57,12 +57,16 @@ module AutoParse
         end
         self.properties[property_key] = property_schema
         if property_schema['$ref']
-          schema_uri =
-            self.uri + Addressable::URI.parse(property_schema['$ref'])
+          if self.uri
+            schema_uri =
+              self.uri + Addressable::URI.parse(property_schema['$ref'])
+          else
+            schema_uri = Addressable::URI.parse(property_schema['$ref'])
+          end
           schema = AutoParse.schemas[schema_uri]
           if schema == nil
             raise ArgumentError,
-              "Could not find schema: #{property_schema['$ref']} " +
+              "Could not find schema: #{property_schema['$ref']}. " +
               "Referenced schema must be parsed first."
           end
           property_schema = schema.data
@@ -141,7 +145,7 @@ module AutoParse
 
       elsif schema_data['additionalProperties']
         # Unknown properties follow the supplied schema.
-        ap_schema = Schema.generate(schema_data['additionalProperties'])
+        ap_schema = AutoParse.generate(schema_data['additionalProperties'])
         @additional_properties_schema = ap_schema
         define_method('method_missing') do |method, *params, &block|
           # We need to convert from Ruby calling style to JavaScript calling

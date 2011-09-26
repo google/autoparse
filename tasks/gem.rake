@@ -23,6 +23,8 @@ namespace :gem do
     s.rdoc_options.concat ['--main',  'README.md']
 
     s.add_runtime_dependency('addressable', '~> 2.2.2')
+    s.add_runtime_dependency('json', '>= 1.4.6')
+    s.add_runtime_dependency('extlib', '>= 0.9.15')
 
     s.add_development_dependency('rake', '~> 0.8.3')
     s.add_development_dependency('rspec', '~> 2.6.0')

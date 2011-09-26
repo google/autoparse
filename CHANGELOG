@@ -1,3 +1,9 @@
+== 0.1.1
+
+* fixed vestigial code from refactoring extraction
+* fixed issue with references when schema URI is not supplied
+* fixed issue with missing gem dependencies
+
 == 0.1.0
 
 * initial release
