@@ -118,6 +118,16 @@ describe AutoParse::Instance, 'with the geo schema' do
     instance.longitude.should == -122.084
   end
 
+  it 'should alter output structure via generated mutators' do
+    instance = @parser.new
+    instance.latitude = 37.422
+    instance.longitude = -122.084
+    instance.to_hash.should == {
+      "latitude" => 37.422,
+      "longitude" => -122.084
+    }
+  end
+
   it 'should be coerceable to a Hash value' do
     instance = @parser.new({
       "latitude" => 37.422,
@@ -215,6 +225,24 @@ describe AutoParse::Instance, 'with the address schema' do
     instance.country_name.should == "United States"
   end
 
+  it 'should alter output structure via generated mutators' do
+    instance = @parser.new
+    instance.post_office_box = "PO Box 3.14159"
+    instance.street_address = "1600 Amphitheatre Parkway"
+    instance.locality = "Mountain View"
+    instance.region = "CA"
+    instance.postal_code = "94043"
+    instance.country_name = "United States"
+    instance.to_hash.should == {
+      "post-office-box" => "PO Box 3.14159",
+      "street-address" => "1600 Amphitheatre Parkway",
+      "locality" => "Mountain View",
+      "region" => "CA",
+      "postal-code" => "94043",
+      "country-name" => "United States"
+    }
+  end
+
   it 'should be coerceable to a Hash value' do
     instance = @parser.new({
       "post-office-box" => "PO Box 3.14159",
@@ -306,6 +334,16 @@ describe AutoParse::Instance, 'with the person schema' do
     })
     instance.name.should == "Bob Aman"
     instance.age.should == 29
+  end
+
+  it 'should alter output structure via generated mutators' do
+    instance = @parser.new
+    instance.name = "Bob Aman"
+    instance.age = 29
+    instance.to_hash.should == {
+      "name" => "Bob Aman",
+      "age" => 29
+    }
   end
 
   it 'should be coerceable to a Hash value' do
@@ -410,6 +448,16 @@ describe AutoParse::Instance, 'with the adult schema' do
     })
     instance.name.should == "Bob Aman"
     instance.age.should == 29
+  end
+
+  it 'should alter output structure via generated mutators' do
+    instance = @adult_parser.new
+    instance.name = "Bob Aman"
+    instance.age = 29
+    instance.to_hash.should == {
+      "name" => "Bob Aman",
+      "age" => 29
+    }
   end
 
   it 'should be coerceable to a Hash value' do
@@ -535,6 +583,16 @@ describe AutoParse::Instance, 'with the account schema' do
     })
     instance.account_number.should == "12345"
     instance.balance.should == 1000
+  end
+
+  it 'should alter output structure via generated mutators' do
+    instance = @account_parser.new
+    instance.account_number = "12345"
+    instance.balance = 1000
+    instance.to_hash.should == {
+      "accountNumber" => "12345",
+      "balance" => 1000
+    }
   end
 
   it 'should be coerceable to a Hash value' do
@@ -765,6 +823,58 @@ describe AutoParse::Instance, 'with the card schema' do
     instance.org.organization_unit.should == "Developer Relations"
   end
 
+  it 'should return nil for undefined object values' do
+    instance = @card_parser.new
+    instance.email.should be_nil
+    instance.tel.should be_nil
+    instance.org.should be_nil
+    instance.adr.should be_nil
+    instance.geo.should be_nil
+  end
+
+  it 'should alter output structure via generated mutators' do
+    instance = @card_parser.new
+    instance.given_name = "Robert"
+    instance.family_name = "Aman"
+    instance.additional_name = ["Danger"]
+    instance.nickname = "Bob"
+    instance.url = "https://plus.google.com/116452824309856782163"
+    instance.email = {}
+    instance.email.type = "work"
+    instance.email.value = "bobaman@google.com"
+    instance.tel = {}
+    instance.tel.type = "fake"
+    instance.tel.value = "867-5309"
+    instance.tz = "+03:00"
+    instance.logo =
+      "https://secure.gravatar.com/avatar/56ee28134dd0776825445e3551979b14"
+    instance.org = {}
+    instance.org.organization_name = "Google, Inc."
+    instance.org.organization_unit = "Developer Relations"
+    instance.to_hash.should == {
+      "givenName" => "Robert",
+      "familyName" => "Aman",
+      "additionalName" => ["Danger"],
+      "nickname" => "Bob",
+      "url" => "https://plus.google.com/116452824309856782163",
+      "email" => {
+        "type" => "work",
+        "value" => "bobaman@google.com"
+      },
+      "tel" => {
+        "type" => "fake",
+        "value" => "867-5309"
+      },
+      "tz" => "+03:00",
+      "logo" =>
+        "https://secure.gravatar.com/avatar/56ee28134dd0776825445e3551979b14",
+      "org" => {
+        "organizationName" => "Google, Inc.",
+        "organizationUnit" => "Developer Relations"
+      }
+    }
+  end
+
   it 'should be coerceable to a Hash value' do
     instance = @card_parser.new({
       "givenName" => "Robert",
@@ -929,6 +1039,36 @@ describe AutoParse::Instance, 'with the calendar schema' do
     instance.geo.longitude.should == -122.084
   end
 
+  it 'should return nil for undefined object values' do
+    instance = @calendar_parser.new
+    instance.geo.should be_nil
+  end
+
+  it 'should alter output structure via generated mutators' do
+    instance = @calendar_parser.new
+    instance.dtstart = Time.utc(1592, 3, 14)
+    instance.dtend = Time.utc(1592, 3, 14, 23, 59, 59)
+    instance.summary = "Pi Day"
+    instance.location = "Googleplex"
+    instance.url = Addressable::URI.parse("http://www.piday.org/")
+    instance.rrule = "FREQ=YEARLY"
+    instance.geo = @geo_parser.new
+    instance.geo.latitude = 37.422
+    instance.geo.longitude = -122.084
+    instance.to_hash.should == {
+      "dtstart" => "1592-03-14T00:00:00Z",
+      "dtend" => "1592-03-14T23:59:59Z",
+      "summary" => "Pi Day",
+      "location" => "Googleplex",
+      "url" => "http://www.piday.org/",
+      "rrule" => "FREQ=YEARLY",
+      "geo" => {
+        "latitude" => 37.422,
+        "longitude" => -122.084
+      }
+    }
+  end
+
   it 'should be coerceable to a Hash value' do
     instance = @calendar_parser.new({
       "dtstart" => "1592-03-14T00:00:00Z",
@@ -967,5 +1107,144 @@ describe AutoParse::Instance, 'with the calendar schema' do
       '"dtstart":"1592-03-14T00:00:00Z",'+
       '"summary":"Pi Day"}'
     )
+  end
+end
+
+describe AutoParse::Instance, 'with the node schema' do
+  before do
+    @uri = Addressable::URI.new(
+      :scheme => 'file',
+      :host => '',
+      :path => File.expand_path(File.join(spec_dir, './data/node.json'))
+    )
+    @schema_data = JSON.parse(File.open(@uri.path, 'r') { |f| f.read })
+    @parser = AutoParse.generate(@schema_data, @uri)
+  end
+
+  it 'should have the correct URI' do
+    @parser.uri.should === @uri
+  end
+
+  it 'should accept a valid node input' do
+    instance = @parser.new({
+      "value" => 42,
+      "left" => nil,
+      "right" => nil
+    })
+    instance.should be_valid
+  end
+
+  it 'should accept extra fields' do
+    instance = @parser.new({
+      "value" => "1",
+      "left" => nil,
+      "right" => nil,
+      "extra" => "bonus!"
+    })
+    instance.should be_valid
+  end
+
+  it 'should not accept an invalid node input' do
+    instance = @parser.new({
+      "value" => 42,
+      "left" => 3.14,
+      "right" => 2.71
+    })
+    instance.should_not be_valid
+  end
+
+  it 'should accept a valid recursive node input' do
+    instance = @parser.new({
+      "value" => 42,
+      "left" => {
+        "value" => 3.14,
+        "left" => nil,
+        "right" => nil
+      },
+      "right" => {
+        "value" => 2.71,
+        "left" => nil,
+        "right" => nil
+      }
+    })
+    instance.should be_valid
+  end
+
+  it 'should expose values via generated accessors' do
+    instance = @parser.new({
+      "value" => 42,
+      "left" => {
+        "value" => 3.14,
+        "left" => nil,
+        "right" => nil
+      },
+      "right" => {
+        "value" => 2.71,
+        "left" => nil,
+        "right" => nil
+      }
+    })
+    instance.value.should == 42
+    instance.left.value.should == 3.14
+    instance.right.value.should == 2.71
+
+    instance.left.left.should == nil
+    instance.right.left.should == nil
+    instance.left.right.should == nil
+    instance.right.right.should == nil
+  end
+
+  it 'should return nil for undefined object values' do
+    instance = @parser.new
+    instance.left.should be_nil
+    instance.right.should be_nil
+  end
+
+  it 'should alter output structure via generated mutators' do
+    instance = @parser.new
+    instance.value = 42
+    instance.left = @parser.new
+    instance.left.value = 3.14
+    instance.left.left = nil
+    instance.left.right = nil
+    instance.right = @parser.new
+    instance.right.value = 2.71
+    instance.right.left = nil
+    instance.right.right = nil
+    instance.to_hash.should == {
+      "value" => 42,
+      "left" => {
+        "value" => 3.14,
+        "left" => nil,
+        "right" => nil
+      },
+      "right" => {
+        "value" => 2.71,
+        "left" => nil,
+        "right" => nil
+      }
+    }
+  end
+
+  it 'should be coerceable to a Hash value' do
+    instance = @parser.new({
+      "value" => 42,
+      "left" => nil,
+      "right" => nil
+    })
+    instance.to_hash.should == {
+      "value" => 42,
+      "left" => nil,
+      "right" => nil
+    }
+  end
+
+  it 'should convert to a JSON string' do
+    instance = @parser.new({
+      "value" => 42,
+      "left" => nil,
+      "right" => nil
+    })
+    instance.to_json.should == '{"left":null,"value":42,"right":null}'
   end
 end

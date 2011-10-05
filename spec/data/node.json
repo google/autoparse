@@ -1,0 +1,9 @@
+{
+  "description" : "A binary tree node",
+  "type" : ["object", "null"],
+  "properties" : {
+    "left" : { "$ref" : "node.json" },
+    "right" : { "$ref" : "node.json" },
+    "value": { "type" : "any" }
+  }
+}

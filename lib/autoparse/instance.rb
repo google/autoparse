@@ -26,8 +26,42 @@ module AutoParse
       )
     end
 
+    def self.dereference
+      if @schema_data['$ref']
+        # Dereference the schema if necessary.
+        schema_uri =
+          self.uri + Addressable::URI.parse(@schema_data['$ref'])
+        schema_class = AutoParse.schemas[schema_uri]
+        if schema_class == nil
+          raise ArgumentError,
+            "Could not find schema: #{@schema_data['$ref']}. " +
+            "Referenced schema must be parsed first."
+        else
+          return schema_class
+        end
+      else
+        return self
+      end
+    end
+
     def self.properties
-      return @properties ||= {}
+      return @properties ||= (
+        if self.superclass.ancestors.include?(::AutoParse::Instance)
+          self.superclass.properties.dup
+        else
+          {}
+        end
+      )
+    end
+
+    def self.keys
+      return @keys ||= (
+        if self.superclass.ancestors.include?(::AutoParse::Instance)
+          self.superclass.keys.dup
+        else
+          {}
+        end
+      )
     end
 
     def self.additional_properties_schema
@@ -56,98 +90,10 @@ module AutoParse
       end
     end
 
-    def self.define_string_property(property_name, key, schema_data)
-      define_method(property_name) do
-        value = self[key] || schema_data['default']
-        if value != nil
-          if schema_data['format'] == 'byte'
-            Base64.decode64(value)
-          elsif schema_data['format'] == 'date-time'
-            Time.parse(value)
-          elsif schema_data['format'] == 'url'
-            Addressable::URI.parse(value)
-          elsif schema_data['format'] =~ /^u?int(32|64)$/
-            value.to_i
-          else
-            value
-          end
-        else
-          nil
-        end
-      end
-      define_method(property_name + '=') do |value|
-        if schema_data['format'] == 'byte'
-          self[key] = Base64.encode64(value)
-        elsif schema_data['format'] == 'date-time'
-          if value.respond_to?(:to_str)
-            value = Time.parse(value.to_str)
-          elsif !value.respond_to?(:xmlschema)
-            raise TypeError,
-              "Could not obtain RFC 3339 timestamp from #{value.class}."
-          end
-          self[key] = value.xmlschema
-        elsif schema_data['format'] == 'url'
-          # This effectively does limited URI validation.
-          self[key] = Addressable::URI.parse(value).to_str
-        elsif schema_data['format'] =~ /^u?int(32|64)$/
-          self[key] = value.to_s
-        elsif value.respond_to?(:to_str)
-          self[key] = value.to_str
-        elsif value.kind_of?(Symbol)
-          self[key] = value.to_s
-        else
-          raise TypeError,
-            "Expected String or Symbol, got #{value.class}."
-        end
-      end
-    end
-
-    def self.define_boolean_property(property_name, key, schema_data)
-      define_method(property_name) do
-        value = self[key] || schema_data['default']
-        case value.to_s.downcase
-        when 'true', 'yes', 'y', 'on', '1'
-          true
-        when 'false', 'no', 'n', 'off', '0'
-          false
-        when 'nil', 'null'
-          nil
-        else
-          raise TypeError,
-            "Expected boolean, got #{value.class}."
-        end
-      end
-      define_method(property_name + '=') do |value|
-        case value.to_s.downcase
-        when 'true', 'yes', 'y', 'on', '1'
-          self[key] = true
-        when 'false', 'no', 'n', 'off', '0'
-          self[key] = false
-        when 'nil', 'null'
-          self[key] = nil
-        else
-          raise TypeError, "Expected boolean, got #{value.class}."
-        end
-      end
-    end
-
-    def self.validate_number_property(property_value, schema_data)
-      return false if !property_value.kind_of?(Numeric)
+    def self.validate_boolean_property(property_value, schema_data)
+      return false if property_value != true && property_value != false
       # TODO: implement more than type-checking
       return true
-    end
-
-    def self.define_number_property(property_name, key, schema_data)
-      define_method(property_name) do
-        Float(self[key] || schema_data['default'])
-      end
-      define_method(property_name + '=') do |value|
-        if value == nil
-          self[key] = value
-        else
-          self[key] = Float(value)
-        end
-      end
     end
 
     def self.validate_integer_property(property_value, schema_data)
@@ -165,17 +111,10 @@ module AutoParse
       return true
     end
 
-    def self.define_integer_property(property_name, key, schema_data)
-      define_method(property_name) do
-        Integer(self[key] || schema_data['default'])
-      end
-      define_method(property_name + '=') do |value|
-        if value == nil
-          self[key] = value
-        else
-          self[key] = Integer(value)
-        end
-      end
+    def self.validate_number_property(property_value, schema_data)
+      return false if !property_value.kind_of?(Numeric)
+      # TODO: implement more than type-checking
+      return true
     end
 
     def self.validate_array_property(property_value, schema_data)
@@ -192,34 +131,6 @@ module AutoParse
       return true
     end
 
-    def self.define_array_property(property_name, key, schema_data)
-      define_method(property_name) do
-        # The default value of an empty Array obviates a mutator method.
-        value = self[key] || []
-        array = if value != nil && !value.respond_to?(:to_ary)
-          raise TypeError,
-            "Expected Array, got #{value.class}."
-        else
-          value.to_ary
-        end
-        if schema_data['items'] && schema_data['items']['$ref']
-          schema_name = schema_data['items']['$ref']
-          # FIXME: Vestigial bits need to be replaced with a more viable
-          # lookup system.
-          if AutoParse.schemas[schema_name]
-            schema_class = AutoParse.schemas[schema_name]
-            array.map! do |item|
-              schema_class.new(item)
-            end
-          else
-            raise ArgumentError,
-              "Could not find schema: #{schema_uri}."
-          end
-        end
-        array
-      end
-    end
-
     def self.validate_object_property(property_value, schema_data)
       if property_value.kind_of?(Instance)
         return property_value.valid?
@@ -233,42 +144,52 @@ module AutoParse
           # which should be `self`.
           schema = AutoParse.generate(schema_data, self.uri)
         end
-        return schema.new(property_value).valid?
-      end
-    end
-
-    def self.define_object_property(property_name, key, schema_data)
-      if schema_data.kind_of?(Class) &&
-          schema_data.ancestors.include?(Instance)
-        # This is a bit of not-entirely-elegant dynamicly-typed optimization.
-        # The class that called us has helpfully parsed the schema already,
-        # so we're avoiding a potentially lossy repetition of that step.
-        schema = schema_data
-        schema_data = schema.data
-      elsif schema_data['$ref']
-        raise ArgumentError, "External reference was not resolved."
-      else
-        # Anonymous schema.
-        if schema_data.has_key?('id')
-          schema = AutoParse.generate(schema_data)
-        else
-          # If the schema has no ID, it inherits the ID from the parent schema,
-          # which should be `self`.
-          schema = AutoParse.generate(schema_data, self.uri)
+        begin
+          return schema.new(property_value).valid?
+        rescue TypeError, ArgumentError, ::JSON::ParserError
+          return false
         end
       end
-      define_method(property_name) do
-        schema.new(self[key] || schema_data['default'])
-      end
     end
 
-    def self.define_any_property(property_name, key, schema_data)
-      define_method(property_name) do
-        self[key] || schema_data['default']
+    def self.validate_union_property(property_value, schema_data)
+      union = schema_data['type']
+      possible_types = [union].flatten.compact
+      for type in possible_types
+        case type
+        when 'string'
+          return true if self.validate_string_property(
+            property_value, schema_data
+          )
+        when 'boolean'
+          return true if self.validate_boolean_property(
+            property_value, schema_data
+          )
+        when 'integer'
+          return true if self.validate_integer_property(
+            property_value, schema_data
+          )
+        when 'number'
+          return true if self.validate_number_property(
+            property_value, schema_data
+          )
+        when 'array'
+          return true if self.validate_array_property(
+            property_value, schema_data
+          )
+        when 'object'
+          return true if self.validate_object_property(
+            property_value, schema_data
+          )
+        when 'null'
+          return true if property_value.nil?
+        when 'any'
+          return true
+        end
       end
-      define_method(property_name + '=') do |value|
-        self[key] = value
-      end
+      # None of the union types validated.
+      # An empty union will fail to validate anything.
+      return false
     end
 
     ##
@@ -301,12 +222,12 @@ module AutoParse
         return false unless self.validate_boolean_property(
           property_value, schema_data
         )
-      when 'number'
-        return false unless self.validate_number_property(
-          property_value, schema_data
-        )
       when 'integer'
         return false unless self.validate_integer_property(
+          property_value, schema_data
+        )
+      when 'number'
+        return false unless self.validate_number_property(
           property_value, schema_data
         )
       when 'array'
@@ -317,6 +238,12 @@ module AutoParse
         return false unless self.validate_object_property(
           property_value, schema_data
         )
+      when 'null'
+        return false unless property_value.nil?
+      when Array
+        return false unless self.validate_union_property(
+          property_value, schema_data
+        )
       else
         # Either type 'any' or we don't know what this is,
         # default to anything goes. Validation of an 'any' property always
@@ -325,12 +252,16 @@ module AutoParse
       return true
     end
 
-    def initialize(data)
-      if self.class.data &&
-          self.class.data['type'] &&
-          self.class.data['type'] != 'object'
-        raise TypeError,
-          "Only schemas of type 'object' are instantiable."
+    def initialize(data={})
+      if (self.class.data || {})['type'] == nil
+        # Type is omitted, default value is any.
+      else
+        type_set = [(self.class.data || {})['type']].flatten.compact
+        if !type_set.include?('object')
+          raise TypeError,
+            "Only schemas of type 'object' are instantiable:\n" +
+            "#{self.class.data.inspect}"
+        end
       end
       if data.respond_to?(:to_hash)
         data = data.to_hash
@@ -341,8 +272,120 @@ module AutoParse
           'Unable to parse. ' +
           'Expected data to respond to either :to_hash or :to_json.'
       end
+      if data['$ref']
+        raise TypeError,
+          "Cannot instantiate a reference schema. Must be dereferenced first."
+      end
       @data = data
     end
+
+    def method_missing(method, *params, &block)
+      schema_data = self.class.data
+      unless schema_data['additionalProperties']
+        # Do nothing special if additionalProperties is not set.
+        super
+      else
+        # We can't modify the method in-place because this affects the call
+        # to super.
+        property_name = method.to_s
+        assignment = false
+        # Property names simply identify the property and thus don't
+        # include the assignment operator.
+        if property_name[-1..-1] == '='
+          assignment = true
+          property_name[-1..-1] = ''
+        end
+        property_key = self.class.keys[property_name]
+        property_schema = self.class.properties[property_key]
+        # TODO: Properly support additionalProperties.
+        if property_key == nil || property_schema == nil
+          # Method not found.
+          return super
+        end
+        # If additionalProperties is simply set to true, no parsing takes
+        # place and all values are treated as 'any'.
+        if assignment
+          new_value = params[0]
+          __set__(property_name, new_value)
+        else
+          __get__(property_name)
+        end
+      end
+    end
+
+    def __get__(property_name)
+      property_key = self.class.keys[property_name]
+
+      schema_class = self.class.properties[property_key]
+      if !schema_class
+        raise TypeError,
+          "Missing property schema for '#{property_key}'."
+      end
+      if schema_class.data['$ref']
+        # Dereference the schema if necessary.
+        schema_class = schema_class.dereference
+        # Avoid this dereference in the future.
+        self.class.properties[property_key] = schema_class
+      end
+
+      value = self[property_key] || schema_class.data['default']
+
+      case schema_class.data['type']
+      when 'string'
+        AutoParse.import_string(value, schema_class)
+      when 'boolean'
+        AutoParse.import_boolean(value, schema_class)
+      when 'integer'
+        AutoParse.import_integer(value, schema_class)
+      when 'number'
+        AutoParse.import_number(value, schema_class)
+      when 'array'
+        AutoParse.import_array(value, schema_class)
+      when 'object'
+        AutoParse.import_object(value, schema_class)
+      when 'null'
+        nil
+      when Array
+        AutoParse.import_union(value, schema_class)
+      else
+        AutoParse.import_any(value, schema_class)
+      end
+    end
+    protected :__get__
+
+    def __set__(property_name, value)
+      property_key = self.class.keys[property_name]
+
+      schema_class = self.class.properties[property_key]
+      if schema_class.data['$ref']
+        # Dereference the schema if necessary.
+        schema_class = schema_class.dereference
+        # Avoid this dereference in the future.
+        self.class.properties[property_key] = schema_class
+      end
+
+      case schema_class.data['type']
+      when 'string'
+        self[property_key] = AutoParse.export_string(value, schema_class)
+      when 'boolean'
+        self[property_key] = AutoParse.export_boolean(value, schema_class)
+      when 'integer'
+        self[property_key] = AutoParse.export_integer(value, schema_class)
+      when 'number'
+        self[property_key] = AutoParse.export_number(value, schema_class)
+      when 'array'
+        self[property_key] = AutoParse.export_array(value, schema_class)
+      when 'object'
+        self[property_key] = AutoParse.export_object(value, schema_class)
+      when 'null'
+        self[property_key] = nil
+      when Array
+        self[property_key] = AutoParse.export_union(value, schema_class)
+      else
+        self[property_key] = AutoParse.export_any(value, schema_class)
+      end
+    end
+    protected :__set__
 
     def [](key)
       return @data[key]
@@ -356,12 +399,13 @@ module AutoParse
     # Validates the parsed data against the schema.
     def valid?
       unvalidated_fields = @data.keys.dup
-      for property_key, property_schema in self.class.properties
+      for property_key, schema_class in self.class.properties
         property_value = self[property_key]
-        if !self.class.validate_property_value(property_value, property_schema)
+        if !self.class.validate_property_value(
+            property_value, schema_class.data)
           return false
         end
-        if property_value == nil && property_schema['required'] != true
+        if property_value == nil && schema_class.data['required'] != true
           # Value was omitted, but not required. Still valid. Skip dependency
           # checks.
           next
