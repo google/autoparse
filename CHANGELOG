@@ -1,5 +1,7 @@
-== 0.1.1
+== 0.2.0
 
+* added support for union types
+* added support for recursive references
 * fixed vestigial code from refactoring extraction
 * fixed issue with references when schema URI is not supplied
 * fixed issue with missing gem dependencies
