@@ -204,7 +204,11 @@ module AutoParse
 
       # Verify property values
       if schema_data['$ref']
-        schema_uri = self.uri + Addressable::URI.parse(schema_data['$ref'])
+        if self.uri
+          schema_uri = self.uri + Addressable::URI.parse(schema_data['$ref'])
+        else
+          schema_uri = Addressable::URI.parse(schema_data['$ref'])
+        end
         schema = AutoParse.schemas[schema_uri]
         if schema == nil
           raise ArgumentError,

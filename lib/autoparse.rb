@@ -286,7 +286,12 @@ module AutoParse
     end)
     items_data = schema_class.data['items']
     if items_data && items_data['$ref']
-      items_uri = schema_class.uri + Addressable::URI.parse(items_data['$ref'])
+      if schema_class && schema_class.uri
+        items_uri =
+          schema_class.uri + Addressable::URI.parse(items_data['$ref'])
+      else
+        items_uri = Addressable::URI.parse(items_data['$ref'])
+      end
       items_schema = AutoParse.schemas[items_uri]
       if items_schema
         array.map! do |item|
