@@ -1,3 +1,7 @@
+== 0.2.1
+
+* fixed URI resolution when base URI is missing
+
 == 0.2.0
 
 * added support for union types
