@@ -282,7 +282,7 @@ module AutoParse
       raise TypeError,
         "Expected Array, got #{value.class}."
     else
-      value.to_ary
+      (value || []).to_ary
     end)
     items_data = schema_class.data['items']
     if items_data && items_data['$ref']
