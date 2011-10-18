@@ -172,6 +172,54 @@ module AutoParse
     return schema
   end
 
+  def self.import(value, schema_class, type=nil)
+    type = schema_class.data['type'] if type == nil
+    case type
+    when 'string'
+      return AutoParse.import_string(value, schema_class)
+    when 'boolean'
+      return AutoParse.import_boolean(value, schema_class)
+    when 'integer'
+      return AutoParse.import_integer(value, schema_class)
+    when 'number'
+      return AutoParse.import_number(value, schema_class)
+    when 'array'
+      return AutoParse.import_array(value, schema_class)
+    when 'object'
+      return AutoParse.import_object(value, schema_class)
+    when 'null'
+      return nil
+    when Array
+      return AutoParse.import_union(value, schema_class)
+    else
+      return AutoParse.import_any(value, schema_class)
+    end
+  end
+
+  def self.export(value, schema_class, type=nil)
+    type = schema_class.data['type'] if type == nil
+    case type
+    when 'string'
+      AutoParse.export_string(value, schema_class)
+    when 'boolean'
+      AutoParse.export_boolean(value, schema_class)
+    when 'integer'
+      AutoParse.export_integer(value, schema_class)
+    when 'number'
+      AutoParse.export_number(value, schema_class)
+    when 'array'
+      AutoParse.export_array(value, schema_class)
+    when 'object'
+      AutoParse.export_object(value, schema_class)
+    when 'null'
+      nil
+    when Array
+      AutoParse.export_union(value, schema_class)
+    else
+      AutoParse.export_any(value, schema_class)
+    end
+  end
+
   def self.import_string(value, schema_class)
     if value != nil
       format = schema_class.data['format']
@@ -278,39 +326,39 @@ module AutoParse
   end
 
   def self.import_array(value, schema_class)
-    array = (if value != nil && !value.respond_to?(:to_ary)
+    value = (if value != nil && !value.respond_to?(:to_ary)
       raise TypeError,
         "Expected Array, got #{value.class}."
     else
-      (value || []).to_ary
+      (value || []).to_ary.dup
     end)
     items_data = schema_class.data['items']
-    if items_data && items_data['$ref']
-      if schema_class && schema_class.uri
-        items_uri =
-          schema_class.uri + Addressable::URI.parse(items_data['$ref'])
-      else
-        items_uri = Addressable::URI.parse(items_data['$ref'])
-      end
-      items_schema = AutoParse.schemas[items_uri]
-      if items_schema
-        array.map! do |item|
-          items_schema.new(item)
-        end
-      else
-        raise ArgumentError,
-          "Could not find schema: #{items_uri}."
-      end
+    items_schema = AutoParse.generate(items_data)
+    if items_schema.data['$ref']
+      # Dereference the schema if necessary.
+      items_schema = items_schema.dereference
     end
-    array
+    value.map! do |item|
+      AutoParse.import(item, items_schema)
+    end
+    value
   end
 
   def self.export_array(value, schema_class)
-    # FIXME: Each item in the Array needs to be exported as well.
     if value == nil
       value
     elsif value.respond_to?(:to_ary)
-      value.to_ary
+      value = value.to_ary.dup
+      items_data = schema_class.data['items']
+      items_schema = AutoParse.generate(items_data)
+      if items_schema.data['$ref']
+        # Dereference the schema if necessary.
+        items_schema = items_schema.dereference
+      end
+      value.map! do |item|
+        AutoParse.export(item, items_schema)
+      end
+      value
     else
       raise TypeError, "Expected Array, got #{value.class}."
     end
@@ -337,52 +385,14 @@ module AutoParse
     import_type = match_type(
       value, schema_class.data['type'], schema_class.uri
     )
-    case import_type
-    when 'string'
-      AutoParse.import_string(value, schema_class)
-    when 'boolean'
-      AutoParse.import_boolean(value, schema_class)
-    when 'integer'
-      AutoParse.import_integer(value, schema_class)
-    when 'number'
-      AutoParse.import_number(value, schema_class)
-    when 'array'
-      AutoParse.import_array(value, schema_class)
-    when 'object'
-      AutoParse.import_object(value, schema_class)
-    when 'null'
-      nil
-    when Class
-      AutoParse.import_object(value, import_type)
-    else
-      AutoParse.import_any(value, schema_class)
-    end
+    AutoParse.import(value, schema_class, import_type)
   end
 
   def self.export_union(value, schema_class)
     export_type = match_type(
       value, schema_class.data['type'], schema_class.uri
     )
-    case export_type
-    when 'string'
-      AutoParse.export_string(value, schema_class)
-    when 'boolean'
-      AutoParse.export_boolean(value, schema_class)
-    when 'integer'
-      AutoParse.export_integer(value, schema_class)
-    when 'number'
-      AutoParse.export_number(value, schema_class)
-    when 'array'
-      AutoParse.export_array(value, schema_class)
-    when 'object'
-      AutoParse.export_object(value, schema_class)
-    when 'null'
-      nil
-    when Class
-      AutoParse.export_object(value, export_type)
-    else
-      AutoParse.export_any(value, schema_class)
-    end
+    AutoParse.export(value, schema_class, export_type)
   end
 
   def self.import_any(value, schema_class)

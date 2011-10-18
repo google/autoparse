@@ -334,26 +334,7 @@ module AutoParse
 
       value = self[property_key] || schema_class.data['default']
 
-      case schema_class.data['type']
-      when 'string'
-        AutoParse.import_string(value, schema_class)
-      when 'boolean'
-        AutoParse.import_boolean(value, schema_class)
-      when 'integer'
-        AutoParse.import_integer(value, schema_class)
-      when 'number'
-        AutoParse.import_number(value, schema_class)
-      when 'array'
-        AutoParse.import_array(value, schema_class)
-      when 'object'
-        AutoParse.import_object(value, schema_class)
-      when 'null'
-        nil
-      when Array
-        AutoParse.import_union(value, schema_class)
-      else
-        AutoParse.import_any(value, schema_class)
-      end
+      AutoParse.import(value, schema_class)
     end
     protected :__get__
 
@@ -368,26 +349,7 @@ module AutoParse
         self.class.properties[property_key] = schema_class
       end
 
-      case schema_class.data['type']
-      when 'string'
-        self[property_key] = AutoParse.export_string(value, schema_class)
-      when 'boolean'
-        self[property_key] = AutoParse.export_boolean(value, schema_class)
-      when 'integer'
-        self[property_key] = AutoParse.export_integer(value, schema_class)
-      when 'number'
-        self[property_key] = AutoParse.export_number(value, schema_class)
-      when 'array'
-        self[property_key] = AutoParse.export_array(value, schema_class)
-      when 'object'
-        self[property_key] = AutoParse.export_object(value, schema_class)
-      when 'null'
-        self[property_key] = nil
-      when Array
-        self[property_key] = AutoParse.export_union(value, schema_class)
-      else
-        self[property_key] = AutoParse.export_any(value, schema_class)
-      end
+      self[property_key] = AutoParse.export(value, schema_class)
     end
     protected :__set__
 
