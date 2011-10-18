@@ -101,7 +101,7 @@ module AutoParse
             value = self[stripped_method]
           else
             # Method not found.
-            super
+            super(method, *params, &block)
           end
           # If additionalProperties is simply set to true, no parsing takes
           # place and all values are treated as 'any'.
