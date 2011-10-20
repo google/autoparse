@@ -21,7 +21,9 @@ module AutoParse
     @schemas ||= {}
   end
 
-  def self.generate(schema_data, uri=nil)
+  def self.generate(schema_data, options={})
+    uri = options[:uri]
+    parent = options[:parent]
     if schema_data["extends"]
       super_uri = uri + Addressable::URI.parse(schema_data["extends"])
       super_schema = self.schemas[super_uri]
@@ -37,6 +39,9 @@ module AutoParse
       @uri = Addressable::URI.parse(uri)
       @uri.normalize! if @uri != nil
       @schema_data = schema_data
+      if !self.uri && parent
+        @uri = parent.uri
+      end
 
       def self.additional_properties_schema
         # Override the superclass implementation so we're not always returning
@@ -57,12 +62,9 @@ module AutoParse
           property_schema = property_super_schema.data.merge(property_schema)
         end
 
-        if schema_data.has_key?('id')
-          property_schema_class = AutoParse.generate(property_schema)
-        else
-          # If the schema has no ID, it inherits the ID from the parent schema.
-          property_schema_class = AutoParse.generate(property_schema, @uri)
-        end
+        # If the schema has no ID, it inherits the ID from the parent schema.
+        property_schema_class =
+          AutoParse.generate(property_schema, :parent => self)
 
         self.properties[property_key] = property_schema_class
         self.keys[property_name] = property_key
@@ -115,7 +117,9 @@ module AutoParse
 
       elsif schema_data['additionalProperties']
         # Unknown properties follow the supplied schema.
-        ap_schema = AutoParse.generate(schema_data['additionalProperties'])
+        ap_schema = AutoParse.generate(
+          schema_data['additionalProperties'], :parent => self
+        )
         @additional_properties_schema = ap_schema
         define_method('method_missing') do |method, *params, &block|
           # We need to convert from Ruby calling style to JavaScript calling
@@ -333,7 +337,7 @@ module AutoParse
       (value || []).to_ary.dup
     end)
     items_data = schema_class.data['items']
-    items_schema = AutoParse.generate(items_data)
+    items_schema = AutoParse.generate(items_data, :parent => schema_class)
     if items_schema.data['$ref']
       # Dereference the schema if necessary.
       items_schema = items_schema.dereference
@@ -350,7 +354,7 @@ module AutoParse
     elsif value.respond_to?(:to_ary)
       value = value.to_ary.dup
       items_data = schema_class.data['items']
-      items_schema = AutoParse.generate(items_data)
+      items_schema = AutoParse.generate(items_data, :parent => schema_class)
       if items_schema.data['$ref']
         # Dereference the schema if necessary.
         items_schema = items_schema.dereference
@@ -383,14 +387,14 @@ module AutoParse
 
   def self.import_union(value, schema_class)
     import_type = match_type(
-      value, schema_class.data['type'], schema_class.uri
+      value, schema_class.data['type'], schema_class
     )
     AutoParse.import(value, schema_class, import_type)
   end
 
   def self.export_union(value, schema_class)
     export_type = match_type(
-      value, schema_class.data['type'], schema_class.uri
+      value, schema_class.data['type'], schema_class
     )
     AutoParse.export(value, schema_class, export_type)
   end
@@ -407,7 +411,7 @@ module AutoParse
   # Given a value and a union of types, selects the type which is the best
   # match for the given value. More than one type may match the value, in which
   # case, the first type in the union will be returned.
-  def self.match_type(value, union, base_uri=nil)
+  def self.match_type(value, union, parent=nil)
     possible_types = [union].flatten.compact
     # Strict pass
     for type in possible_types
@@ -429,11 +433,7 @@ module AutoParse
         return 'null' if value.nil?
       when Hash
         # Schema embedded directly.
-        unless base_uri
-          schema_class = AutoParse.generate(type)
-        else
-          schema_class = AutoParse.generate(type, base_uri)
-        end
+        schema_class = AutoParse.generate(type, :parent => parent)
         if type['$ref']
           schema_class = schema_class.dereference
         end

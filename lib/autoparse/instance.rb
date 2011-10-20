@@ -29,9 +29,20 @@ module AutoParse
     def self.dereference
       if @schema_data['$ref']
         # Dereference the schema if necessary.
-        schema_uri =
-          self.uri + Addressable::URI.parse(@schema_data['$ref'])
+        ref_uri = Addressable::URI.parse(@schema_data['$ref'])
+        if self.uri
+          schema_uri =
+            self.uri + Addressable::URI.parse(@schema_data['$ref'])
+        else
+          if ref_uri.relative?
+            warn("Schema URI is relative, could not resolve against parent.")
+          else
+            warn("Could not resolve URI against parent.")
+          end
+          schema_uri = ref_uri
+        end
         schema_class = AutoParse.schemas[schema_uri]
+        warn("Schema URI mismatch.") if schema_class.uri != schema_uri
         if schema_class == nil
           raise ArgumentError,
             "Could not find schema: #{@schema_data['$ref']}. " +
@@ -137,13 +148,7 @@ module AutoParse
       else
         # This is highly ineffecient, but currently hard to avoid given the
         # schema is anonymous, making lookups very difficult.
-        if schema_data.has_key?('id')
-          schema = AutoParse.generate(schema_data)
-        else
-          # If the schema has no ID, it inherits the ID from the parent schema,
-          # which should be `self`.
-          schema = AutoParse.generate(schema_data, self.uri)
-        end
+        schema = AutoParse.generate(schema_data, :parent => self)
         begin
           return schema.new(property_value).valid?
         rescue TypeError, ArgumentError, ::JSON::ParserError
@@ -427,14 +432,10 @@ module AutoParse
     #
     # @return [String] The instance's state, as a <code>String</code>.
     def inspect
-      if self.class.respond_to?(:description)
-        sprintf(
-          "#<%s:%#0x DESC:'%s'>",
-          self.class.to_s, self.object_id, self.class.description
-        )
-      else
-        sprintf("#<%s:%#0x>", self.class.to_s, self.object_id)
-      end
+      sprintf(
+        "#<%s:%#0x DATA:%s>",
+        self.class.to_s, self.object_id, self.class.to_hash.inspect
+      )
     end
   end
 

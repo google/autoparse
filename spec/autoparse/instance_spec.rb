@@ -77,7 +77,7 @@ describe AutoParse::Instance, 'with the geo schema' do
       :path => File.expand_path(File.join(spec_dir, './data/geo.json'))
     )
     @schema_data = JSON.parse(File.open(@uri.path, 'r') { |f| f.read })
-    @parser = AutoParse.generate(@schema_data, @uri)
+    @parser = AutoParse.generate(@schema_data, :uri => @uri)
   end
 
   it 'should have the correct URI' do
@@ -156,7 +156,7 @@ describe AutoParse::Instance, 'with the address schema' do
       :path => File.expand_path(File.join(spec_dir, './data/address.json'))
     )
     @schema_data = JSON.parse(File.open(@uri.path, 'r') { |f| f.read })
-    @parser = AutoParse.generate(@schema_data, @uri)
+    @parser = AutoParse.generate(@schema_data, :uri => @uri)
   end
 
   it 'should have the correct URI' do
@@ -271,7 +271,7 @@ describe AutoParse::Instance, 'with the person schema' do
       :path => File.expand_path(File.join(spec_dir, './data/person.json'))
     )
     @schema_data = JSON.parse(File.open(@uri.path, 'r') { |f| f.read })
-    @parser = AutoParse.generate(@schema_data, @uri)
+    @parser = AutoParse.generate(@schema_data, :uri => @uri)
   end
 
   it 'should have the correct URI' do
@@ -375,7 +375,9 @@ describe AutoParse::Instance, 'with the adult schema' do
     )
     @person_schema_data =
       JSON.parse(File.open(@person_uri.path, 'r') { |f| f.read })
-    @person_parser = AutoParse.generate(@person_schema_data, @person_uri)
+    @person_parser = AutoParse.generate(
+      @person_schema_data, :uri => @person_uri
+    )
 
     @adult_uri = Addressable::URI.new(
       :scheme => 'file',
@@ -384,7 +386,7 @@ describe AutoParse::Instance, 'with the adult schema' do
     )
     @adult_schema_data =
       JSON.parse(File.open(@adult_uri.path, 'r') { |f| f.read })
-    @adult_parser = AutoParse.generate(@adult_schema_data, @adult_uri)
+    @adult_parser = AutoParse.generate(@adult_schema_data, :uri => @adult_uri)
   end
 
   it 'should have the correct URI' do
@@ -489,7 +491,9 @@ describe AutoParse::Instance, 'with the positive schema' do
     )
     @positive_schema_data =
       JSON.parse(File.open(@positive_uri.path, 'r') { |f| f.read })
-    @positive_parser = AutoParse.generate(@positive_schema_data, @positive_uri)
+    @positive_parser = AutoParse.generate(
+      @positive_schema_data, :uri => @positive_uri
+    )
   end
 
   it 'should have the correct URI' do
@@ -518,7 +522,9 @@ describe AutoParse::Instance, 'with the account schema' do
     )
     @positive_schema_data =
       JSON.parse(File.open(@positive_uri.path, 'r') { |f| f.read })
-    @positive_parser = AutoParse.generate(@positive_schema_data, @positive_uri)
+    @positive_parser = AutoParse.generate(
+      @positive_schema_data, :uri => @positive_uri
+    )
 
     @account_uri = Addressable::URI.new(
       :scheme => 'file',
@@ -527,7 +533,9 @@ describe AutoParse::Instance, 'with the account schema' do
     )
     @account_schema_data =
       JSON.parse(File.open(@account_uri.path, 'r') { |f| f.read })
-    @account_parser = AutoParse.generate(@account_schema_data, @account_uri)
+    @account_parser = AutoParse.generate(
+      @account_schema_data, :uri => @account_uri
+    )
   end
 
   it 'should have the correct URI' do
@@ -624,7 +632,9 @@ describe AutoParse::Instance, 'with the card schema' do
     )
     @address_schema_data =
       JSON.parse(File.open(@address_uri.path, 'r') { |f| f.read })
-    @address_parser = AutoParse.generate(@address_schema_data, @address_uri)
+    @address_parser = AutoParse.generate(
+      @address_schema_data, :uri => @address_uri
+    )
 
     @geo_uri = Addressable::URI.new(
       :scheme => 'file',
@@ -633,7 +643,7 @@ describe AutoParse::Instance, 'with the card schema' do
     )
     @geo_schema_data =
       JSON.parse(File.open(@geo_uri.path, 'r') { |f| f.read })
-    @geo_parser = AutoParse.generate(@geo_schema_data, @geo_uri)
+    @geo_parser = AutoParse.generate(@geo_schema_data, :uri => @geo_uri)
 
     @card_uri = Addressable::URI.new(
       :scheme => 'file',
@@ -642,7 +652,7 @@ describe AutoParse::Instance, 'with the card schema' do
     )
     @card_schema_data =
       JSON.parse(File.open(@card_uri.path, 'r') { |f| f.read })
-    @card_parser = AutoParse.generate(@card_schema_data, @card_uri)
+    @card_parser = AutoParse.generate(@card_schema_data, :uri => @card_uri)
   end
 
   it 'should have the correct URI' do
@@ -940,7 +950,7 @@ describe AutoParse::Instance, 'with the calendar schema' do
     )
     @geo_schema_data =
       JSON.parse(File.open(@geo_uri.path, 'r') { |f| f.read })
-    @geo_parser = AutoParse.generate(@geo_schema_data, @geo_uri)
+    @geo_parser = AutoParse.generate(@geo_schema_data, :uri => @geo_uri)
 
     @calendar_uri = Addressable::URI.new(
       :scheme => 'file',
@@ -949,7 +959,9 @@ describe AutoParse::Instance, 'with the calendar schema' do
     )
     @calendar_schema_data =
       JSON.parse(File.open(@calendar_uri.path, 'r') { |f| f.read })
-    @calendar_parser = AutoParse.generate(@calendar_schema_data, @calendar_uri)
+    @calendar_parser = AutoParse.generate(
+      @calendar_schema_data, :uri => @calendar_uri
+    )
   end
 
   it 'should have the correct URI' do
@@ -1118,7 +1130,7 @@ describe AutoParse::Instance, 'with the node schema' do
       :path => File.expand_path(File.join(spec_dir, './data/node.json'))
     )
     @schema_data = JSON.parse(File.open(@uri.path, 'r') { |f| f.read })
-    @parser = AutoParse.generate(@schema_data, @uri)
+    @parser = AutoParse.generate(@schema_data, :uri => @uri)
   end
 
   it 'should have the correct URI' do
