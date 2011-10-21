@@ -434,7 +434,7 @@ module AutoParse
     def inspect
       sprintf(
         "#<%s:%#0x DATA:%s>",
-        self.class.to_s, self.object_id, self.class.to_hash.inspect
+        self.class.to_s, self.object_id, self.to_hash.inspect
       )
     end
   end
