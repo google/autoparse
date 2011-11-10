@@ -482,6 +482,184 @@ describe AutoParse::Instance, 'with the adult schema' do
   end
 end
 
+describe AutoParse::Instance, 'with the user list schema' do
+  before do
+    @person_uri = Addressable::URI.new(
+      :scheme => 'file',
+      :host => '',
+      :path => File.expand_path(File.join(spec_dir, './data/person.json'))
+    )
+    @person_schema_data =
+      JSON.parse(File.open(@person_uri.path, 'r') { |f| f.read })
+    @person_parser = AutoParse.generate(
+      @person_schema_data, :uri => @person_uri
+    )
+
+    @user_list_uri = Addressable::URI.new(
+      :scheme => 'file',
+      :host => '',
+      :path => File.expand_path(File.join(spec_dir, './data/user-list.json'))
+    )
+    @user_list_schema_data =
+      JSON.parse(File.open(@user_list_uri.path, 'r') { |f| f.read })
+    @user_list_parser = AutoParse.generate(
+      @user_list_schema_data, :uri => @user_list_uri
+    )
+  end
+
+  it 'should have the correct URI' do
+    @user_list_parser.uri.should === @user_list_uri
+  end
+
+  it 'should accept a valid person input' do
+    instance = @user_list_parser.new({
+      "users" => {
+        "bobaman@google.com" => {
+          "name" => "Bob Aman",
+          "age" => 29
+        }
+      }
+    })
+    instance.should be_valid
+  end
+
+  it 'should accept extra fields' do
+    instance = @user_list_parser.new({
+      "users" => {
+        "bobaman@google.com" => {
+          "name" => "Bob Aman",
+          "age" => 29,
+          "extra" => "bonus!"
+        }
+      },
+      "extra" => "bonus!"
+    })
+    instance.should be_valid
+  end
+
+  it 'should not accept additional properties that do not validate' do
+    instance = @user_list_parser.new({
+      "users" => {
+        "bobaman@google.com" => {
+          "name" => "Bob Aman",
+          "age" => 29
+        },
+        "oldguy@example.com" => {
+          "name" => "Methuselah",
+          "age" => 969
+        }
+      }
+    })
+    instance.should_not be_valid
+  end
+
+  it 'should not accept additional properties that do not validate' do
+    instance = @user_list_parser.new({
+      "users" => {
+        "bobaman@google.com" => {
+          "name" => "Bob Aman",
+          "age" => 29.7
+        }
+      }
+    })
+    instance.should_not be_valid
+  end
+
+  it 'should expose values via generated accessors' do
+    instance = @user_list_parser.new({
+      "users" => {
+        "bobaman@google.com" => {
+          "name" => "Bob Aman",
+          "age" => 29
+        }
+      }
+    })
+    instance.users['bobaman@google.com'].name.should == "Bob Aman"
+    instance.users['bobaman@google.com'].age.should == 29
+  end
+
+  it 'should permit access to raw values' do
+    instance = @user_list_parser.new({
+      "users" => {
+        "bobaman@google.com" => {
+          "name" => "Bob Aman",
+          "age" => 29
+        }
+      }
+    })
+    instance.users['bobaman@google.com', true].should == {
+      "name" => "Bob Aman",
+      "age" => 29
+    }
+  end
+
+  it 'should alter output structure via generated mutators' do
+    instance = @user_list_parser.new
+    instance.users = {}
+    instance.users["bobaman@google.com"] = @person_parser.new
+    instance.users["bobaman@google.com"].name = "Bob Aman"
+    instance.users["bobaman@google.com"].age = 29
+    instance.to_hash.should == {
+      "users" => {
+        "bobaman@google.com" => {
+          "name" => "Bob Aman",
+          "age" => 29
+        }
+      }
+    }
+  end
+
+  it 'should allow raw assignment' do
+    instance = @user_list_parser.new
+    instance.users = {}
+    instance.users["bobaman@google.com", true] = {
+      "name" => "Bob Aman",
+      "age" => 29
+    }
+    instance.to_hash.should == {
+      "users" => {
+        "bobaman@google.com" => {
+          "name" => "Bob Aman",
+          "age" => 29
+        }
+      }
+    }
+  end
+
+  it 'should be coerceable to a Hash value' do
+    instance = @user_list_parser.new({
+      "users" => {
+        "bobaman@google.com" => {
+          "name" => "Bob Aman",
+          "age" => 29
+        }
+      }
+    })
+    instance.to_hash.should == {
+      "users" => {
+        "bobaman@google.com" => {
+          "name" => "Bob Aman",
+          "age" => 29
+        }
+      }
+    }
+  end
+
+  it 'should convert to a JSON string' do
+    instance = @user_list_parser.new({
+      "users" => {
+        "bobaman@google.com" => {
+          "name" => "Bob Aman",
+          "age" => 29
+        }
+      }
+    })
+    instance.to_json.should == (
+      '{"users":{"bobaman@google.com":{"name":"Bob Aman","age":29}}}'
+    )
+  end
+end
+
 describe AutoParse::Instance, 'with the positive schema' do
   before do
     @positive_uri = Addressable::URI.new(
@@ -659,6 +837,21 @@ describe AutoParse::Instance, 'with the card schema' do
     @address_parser.uri.should === @address_uri
     @geo_parser.uri.should === @geo_uri
     @card_parser.uri.should === @card_uri
+  end
+
+  it 'should allow nested objects to be accessed in raw' do
+    instance = @card_parser.new({
+      "givenName" => "Robert",
+      "familyName" => "Aman",
+      "org" => {
+        "organizationName" => "Google, Inc.",
+        "organizationUnit" => "Developer Relations"
+      }
+    })
+    instance['org', true].should == {
+      "organizationName" => "Google, Inc.",
+      "organizationUnit" => "Developer Relations"
+    }
   end
 
   it 'should have the correct URI for anonymous nested objects' do

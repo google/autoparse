@@ -84,11 +84,11 @@ module AutoParse
     end
 
     def self.data
-      return @schema_data
+      return @schema_data ||= {}
     end
 
     def self.description
-      return @schema_data['description']
+      return self.data['description']
     end
 
     def self.validate_string_property(property_value, schema_data)
@@ -323,47 +323,66 @@ module AutoParse
     end
 
     def __get__(property_name)
-      property_key = self.class.keys[property_name]
+      property_key = self.class.keys[property_name] || property_name
 
       schema_class = self.class.properties[property_key]
+      schema_class = self.class.additional_properties_schema if !schema_class
       if !schema_class
-        raise TypeError,
-          "Missing property schema for '#{property_key}'."
-      end
-      if schema_class.data['$ref']
-        # Dereference the schema if necessary.
-        schema_class = schema_class.dereference
-        # Avoid this dereference in the future.
-        self.class.properties[property_key] = schema_class
-      end
+        @data[property_key]
+      else
+        if schema_class.data['$ref']
+          # Dereference the schema if necessary.
+          schema_class = schema_class.dereference
+          # Avoid this dereference in the future.
+          self.class.properties[property_key] = schema_class
+        end
 
-      value = self[property_key] || schema_class.data['default']
+        value = @data[property_key] || schema_class.data['default']
 
-      AutoParse.import(value, schema_class)
+        AutoParse.import(value, schema_class)
+      end
     end
     protected :__get__
 
     def __set__(property_name, value)
-      property_key = self.class.keys[property_name]
+      property_key = self.class.keys[property_name] || property_name
 
       schema_class = self.class.properties[property_key]
-      if schema_class.data['$ref']
-        # Dereference the schema if necessary.
-        schema_class = schema_class.dereference
-        # Avoid this dereference in the future.
-        self.class.properties[property_key] = schema_class
-      end
+      schema_class = self.class.additional_properties_schema if !schema_class
+      if !schema_class
+        @data[property_key] = value
+      else
+        if schema_class.data['$ref']
+          # Dereference the schema if necessary.
+          schema_class = schema_class.dereference
+          # Avoid this dereference in the future.
+          self.class.properties[property_key] = schema_class
+        end
 
-      self[property_key] = AutoParse.export(value, schema_class)
+        @data[property_key] = AutoParse.export(value, schema_class)
+      end
     end
     protected :__set__
 
-    def [](key)
-      return @data[key]
+    def [](key, raw=false)
+      if raw == true
+        return @data[key]
+      else
+        return self.__get__(key)
+      end
     end
 
-    def []=(key, value)
-      return @data[key] = value
+    def []=(key, raw=false, value=:undefined)
+      if value == :undefined
+        # Due to the way Ruby handles default values in assignment methods,
+        # we have to swap some values around here.
+        raw, value = false, raw
+      end
+      if raw == true
+        return @data[key] = value
+      else
+        return self.__set__(key, value)
+      end
     end
 
     ##
@@ -371,7 +390,7 @@ module AutoParse
     def valid?
       unvalidated_fields = @data.keys.dup
       for property_key, schema_class in self.class.properties
-        property_value = self[property_key]
+        property_value = @data[property_key]
         if !self.class.validate_property_value(
             property_value, schema_class.data)
           return false
@@ -388,7 +407,7 @@ module AutoParse
         when String, Array
           property_dependencies = [property_dependencies].flatten
           for dependency_key in property_dependencies
-            dependency_value = self[dependency_key]
+            dependency_value = @data[dependency_key]
             return false if dependency_value == nil
           end
         when Class
@@ -406,9 +425,13 @@ module AutoParse
         return false unless unvalidated_fields.empty?
       elsif self.class.additional_properties_schema != EMPTY_SCHEMA
         # Validate all remaining fields against this schema
-
-        # Make sure tests don't pass prematurely
-        return false
+        for property_key in unvalidated_fields
+          property_value = @data[property_key]
+          if !self.class.additional_properties_schema.validate_property_value(
+              property_value, self.class.additional_properties_schema.data)
+            return false
+          end
+        end
       end
       if self.class.superclass && self.class.superclass != Instance &&
           self.class.ancestors.first != Instance

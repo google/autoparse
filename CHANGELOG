@@ -1,3 +1,9 @@
+== 0.3.0
+
+* fixed handling of additional properties w/ a set schema
+* modified index methods to allow either raw or parsed access
+* modified index methods to default to parsed access
+
 == 0.2.3
 
 * fixed stupid bug in inspect method

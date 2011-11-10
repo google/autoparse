@@ -46,6 +46,11 @@ module AutoParse
       def self.additional_properties_schema
         # Override the superclass implementation so we're not always returning
         # the empty schema.
+        if @additional_properties_schema.data['$ref']
+          # Dereference the schema if necessary.
+          @additional_properties_schema =
+            @additional_properties_schema.dereference
+        end
         return @additional_properties_schema
       end
 
@@ -81,87 +86,48 @@ module AutoParse
           schema_data['additionalProperties'] == nil
         # Schema-less unknown properties are allowed.
         @additional_properties_schema = EMPTY_SCHEMA
-        define_method('method_missing') do |method, *params, &block|
-          # We need to convert from Ruby calling style to JavaScript calling
-          # style. If this fails, attempt to use JavaScript calling style
-          # directly.
-
-          # We can't modify the method in-place because this affects the call
-          # to super.
-          stripped_method = method.to_s
-          assignment = false
-          if stripped_method[-1..-1] == '='
-            assignment = true
-            stripped_method[-1..-1] = ''
-          end
-          key = INFLECTOR.camelize(stripped_method)
-          key[0..0] = key[0..0].downcase
-          if self[key] != nil
-            value = self[key]
-          elsif self[stripped_method] != nil
-            key = stripped_method
-            value = self[stripped_method]
-          else
-            # Method not found.
-            super(method, *params, &block)
-          end
-          # If additionalProperties is simply set to true, no parsing takes
-          # place and all values are treated as 'any'.
-          if assignment
-            new_value = params[0]
-            self[key] = new_value
-          else
-            value
-          end
-        end
-
       elsif schema_data['additionalProperties']
         # Unknown properties follow the supplied schema.
         ap_schema = AutoParse.generate(
           schema_data['additionalProperties'], :parent => self
         )
         @additional_properties_schema = ap_schema
-        define_method('method_missing') do |method, *params, &block|
-          # We need to convert from Ruby calling style to JavaScript calling
-          # style. If this fails, attempt to use JavaScript calling style
-          # directly.
-
-          # We can't modify the method in-place because this affects the call
-          # to super.
-          stripped_method = method.to_s
-          assignment = false
-          if stripped_method[-1..-1] == '='
-            assignment = true
-            stripped_method[-1..-1] = ''
-          end
-          key = INFLECTOR.camelize(stripped_method)
-          key[0..0] = key[0..0].downcase
-          if self[key] != nil
-            value = self[key]
-          elsif self[stripped_method] != nil
-            key = stripped_method
-            value = self[stripped_method]
-          else
-            # Method not found.
-            super
-          end
-          if assignment
-            # In the case of assignment, it's very likely the developer is
-            # passing in an unparsed Hash value. This value must be parsed.
-            # Unfortunately, we may accidentally reparse something that's
-            # already in a parsed state because Schema.new(Schema.new(data))
-            # is completely valid. This will cause performance issues if
-            # developers are careless, but since there's no good reason to
-            # do assignment on parsed objects, hopefully this should not
-            # cause problems often.
-            new_value = params[0]
-            self[key] = ap_schema.new(new_value)
-          else
-            ap_schema.new(value)
-          end
-        end
       else
         @additional_properties_schema = nil
+      end
+
+      define_method('method_missing') do |method, *params, &block|
+        # We need to convert from Ruby calling style to JavaScript calling
+        # style. If this fails, attempt to use JavaScript calling style
+        # directly.
+
+        # We can't modify the method in-place because this affects the call
+        # to super.
+        stripped_method = method.to_s
+        assignment = false
+        if stripped_method[-1..-1] == '='
+          assignment = true
+          stripped_method[-1..-1] = ''
+        end
+        key = INFLECTOR.camelize(stripped_method)
+        key[0..0] = key[0..0].downcase
+        if @data[key] != nil
+          # Data found
+        elsif @data[stripped_method] != nil
+          # Data found
+          key = stripped_method
+        else
+          # Method not found.
+          super(method, *params, &block)
+        end
+        # If additionalProperties is simply set to true, no parsing takes
+        # place and all values are treated as 'any'.
+        if assignment
+          new_value = params[0]
+          self.__set__(key, new_value)
+        else
+          self.__get__(key)
+        end
       end
 
       if schema_data['dependencies']

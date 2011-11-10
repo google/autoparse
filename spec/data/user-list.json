@@ -1,0 +1,12 @@
+{
+  "description": "A mapping of users.",
+  "type": "object",
+  "properties": {
+    "users": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "person.json"
+      }
+    }
+  }
+}
