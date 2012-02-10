@@ -34,7 +34,7 @@ namespace :gem do
     s.require_path = 'lib'
   end
 
-  Rake::GemPackageTask.new(GEM_SPEC) do |p|
+  Gem::PackageTask.new(GEM_SPEC) do |p|
     p.gem_spec = GEM_SPEC
     p.need_tar = true
     p.need_zip = true
@@ -43,6 +43,21 @@ namespace :gem do
   desc 'Show information about the gem'
   task :debug do
     puts GEM_SPEC.to_ruby
+  end
+
+  desc "Generates .gemspec file"
+  task :gemspec do
+    spec_string = GEM_SPEC.to_ruby
+
+    begin
+      Thread.new { eval("$SAFE = 3\n#{spec_string}", binding) }.join
+    rescue
+      abort "unsafe gemspec: #{$!}"
+    else
+      File.open("#{GEM_SPEC.name}.gemspec", 'w') do |file|
+        file.write spec_string
+      end
+    end
   end
 
   desc 'Install the gem'
