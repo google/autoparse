@@ -87,4 +87,4 @@ end
 desc 'Alias to gem:package'
 task 'gem' => 'gem:package'
 
-task 'clobber' => ['gem:clobber_package']
+task 'gem:release' => 'gem:gemspec'
