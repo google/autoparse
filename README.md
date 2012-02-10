@@ -10,7 +10,7 @@
 # Description
 
 An implementation of the JSON Schema specification. Provides automatic parsing
-for any given JSON Schema.
+for a given JSON Schema.
 
 # Requirements
 

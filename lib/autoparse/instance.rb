@@ -13,7 +13,7 @@
 #    limitations under the License.
 
 
-require 'json'
+require 'multi_json'
 require 'time'
 require 'autoparse/inflection'
 require 'addressable/uri'
@@ -446,8 +446,16 @@ module AutoParse
       return @data
     end
 
-    def to_json
-      return ::JSON.generate(self.to_hash)
+    ##
+    # Converts the instance value to JSON.
+    #
+    # @return [String] The instance value converted to JSON.
+    #
+    # @note
+    #   Ignores extra arguments to avoid throwing errors w/ certain JSON
+    #   libraries.
+    def to_json(*args)
+      return MultiJson.encode(self.to_hash)
     end
 
     ##

@@ -345,7 +345,7 @@ module AutoParse
     elsif value.respond_to?(:to_hash)
       value.to_hash
     elsif value.respond_to?(:to_json)
-      ::JSON.parse(value.to_json)
+      MultiJson.decode(value.to_json)
     else
       raise TypeError, "Expected Hash, got #{value.class}."
     end
