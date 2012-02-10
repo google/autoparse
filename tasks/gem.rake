@@ -1,4 +1,7 @@
-require 'rake/gempackagetask'
+require 'rubygems/package_task'
+require 'rake/clean'
+
+CLOBBER.include('pkg')
 
 namespace :gem do
   GEM_SPEC = Gem::Specification.new do |s|

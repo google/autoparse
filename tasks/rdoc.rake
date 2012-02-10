@@ -1,4 +1,15 @@
-require 'rake/rdoctask'
+require 'rubygems'
+begin
+  # We prefer to use the RDoc gem over the site version.
+  gem 'rdoc'
+rescue Gem::LoadError
+end unless defined?(RDoc)
+
+require 'rdoc/task'
+require 'rake/clean'
+
+CLOBBER.include('doc', 'ri')
+CLOBBER.uniq!
 
 namespace :doc do
   desc 'Generate RDoc documentation'
@@ -16,11 +27,4 @@ namespace :doc do
   task :ri do
     sh 'rdoc --ri -o ri .'
   end
-
-  desc 'Remove ri products'
-  task :clobber_ri do
-    rm_r 'ri' rescue nil
-  end
 end
-
-task 'clobber' => ['doc:clobber_rdoc', 'doc:clobber_ri']

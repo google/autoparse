@@ -4,17 +4,13 @@ $:.uniq!
 
 require 'rubygems'
 require 'rake'
-require 'rake/testtask'
-require 'rake/rdoctask'
-require 'rake/packagetask'
-require 'rake/gempackagetask'
-require 'rake/contrib/rubyforgepublisher'
 
+gem 'rspec', '~> 1.2.9'
 begin
   require 'spec/rake/spectask'
 rescue LoadError
-  STDERR.puts 'Please install rspec:'
-  STDERR.puts 'sudo gem install rspec'
+  STDERR.puts "Please install rspec:"
+  STDERR.puts "sudo gem install rspec"
   exit(1)
 end
 
