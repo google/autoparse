@@ -1303,8 +1303,8 @@ describe AutoParse::Instance, 'with the calendar schema' do
 
   it 'should convert to a JSON string' do
     instance = @calendar_parser.new({
-      "dtstart" => "1592-03-14T00:00:00Z",
       "dtend" => "1592-03-14T23:59:59Z",
+      "dtstart" => "1592-03-14T00:00:00Z",
       "summary" => "Pi Day"
     })
     instance.to_json.should == (
@@ -1446,8 +1446,8 @@ describe AutoParse::Instance, 'with the node schema' do
 
   it 'should convert to a JSON string' do
     instance = @parser.new({
-      "value" => 42,
       "left" => nil,
+      "value" => 42,
       "right" => nil
     })
     instance.to_json.should == '{"left":null,"value":42,"right":null}'
