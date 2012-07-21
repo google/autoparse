@@ -25,14 +25,13 @@ namespace :gem do
     s.extra_rdoc_files = %w( README.md )
     s.rdoc_options.concat ['--main',  'README.md']
 
-    s.add_runtime_dependency('addressable', '~> 2.2.3')
+    s.add_runtime_dependency('addressable', '>= 2.3.1')
     s.add_runtime_dependency('multi_json', '>= 1.0.0')
     s.add_runtime_dependency('extlib', '>= 0.9.15')
 
-    s.add_development_dependency('rake', '~> 0.8.3')
-    s.add_development_dependency('rspec', '~> 2.6.0')
-    s.add_development_dependency('launchy', '~> 0.3.2')
-    s.add_development_dependency('diff-lcs', '~> 1.1.2')
+    s.add_development_dependency('rake', '>= 0.9.0')
+    s.add_development_dependency('rspec', '>= 2.11.0')
+    # s.add_development_dependency('launchy', '>= 2.0.0')
 
     s.require_path = 'lib'
   end
