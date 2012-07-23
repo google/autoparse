@@ -22,6 +22,7 @@ require 'autoparse'
 require 'addressable/uri'
 
 describe AutoParse::Instance, 'with an empty schema' do
+  include JSONMatchers
   before do
     @parser = AutoParse::EMPTY_SCHEMA
   end
@@ -65,7 +66,7 @@ describe AutoParse::Instance, 'with an empty schema' do
 
   it 'should convert to a JSON string' do
     instance = @parser.new({"be" => "brief"})
-    instance.to_json.should == '{"be":"brief"}'
+    instance.to_json.should be_json '{"be":"brief"}'
   end
 end
 
@@ -1135,6 +1136,7 @@ describe AutoParse::Instance, 'with the card schema' do
 end
 
 describe AutoParse::Instance, 'with the calendar schema' do
+  include JSONMatchers
   before do
     @geo_uri = Addressable::URI.new(
       :scheme => 'file',
@@ -1307,7 +1309,7 @@ describe AutoParse::Instance, 'with the calendar schema' do
       "dtend" => "1592-03-14T23:59:59Z",
       "summary" => "Pi Day"
     })
-    instance.to_json.should == (
+    instance.to_json.should be_json (
       '{"dtend":"1592-03-14T23:59:59Z",' +
       '"dtstart":"1592-03-14T00:00:00Z",'+
       '"summary":"Pi Day"}'
@@ -1316,6 +1318,7 @@ describe AutoParse::Instance, 'with the calendar schema' do
 end
 
 describe AutoParse::Instance, 'with the node schema' do
+  include JSONMatchers
   before do
     @uri = Addressable::URI.new(
       :scheme => 'file',
@@ -1450,6 +1453,48 @@ describe AutoParse::Instance, 'with the node schema' do
       "left" => nil,
       "right" => nil
     })
-    instance.to_json.should == '{"left":null,"value":42,"right":null}'
+    instance.to_json.should be_json '{"left":null,"value":42,"right":null}'
   end
+end
+
+describe AutoParse::Instance, 'with the file schema' do
+  
+  def load_schema(file, uri)
+    json = JSON.parse(File.read(file))
+    return AutoParse.generate(json, :uri => Addressable::URI.parse(uri))
+  end    
+  
+  before do
+    @filelist_parser = load_schema('spec/data/filelist.json', 'https://www.googleapis.com/drive/v2/#FileList')
+    @file_parser = load_schema('spec/data/file.json', 'https://www.googleapis.com/drive/v2/#File')
+    @parentref_parser = load_schema('spec/data/parentref.json', 'https://www.googleapis.com/drive/v2/#ParentReference')
+  end
+
+  it 'should not redefine parent schemas' do
+    data = {
+     "kind" => "drive#fileList",
+     "items" => [
+      {
+       "kind" => "drive#file",
+       "id" => "0Bz2X2-r-Ou9fYTJFLVFYZENzMjA",
+       "parents" => [
+        {
+         "kind" => "drive#parentReference",
+         "id" => "0AD2X2-r-Ou9fUk9PVA",
+        }
+       ],
+      }
+     ]
+    }
+    
+    file = @filelist_parser.new(data)
+    file.should be_an_instance_of @filelist_parser
+    file.items.first.should be_an_instance_of @file_parser
+    file.items.first.parents.first.should be_an_instance_of @parentref_parser
+
+    file = @filelist_parser.new(data)
+    file.should be_an_instance_of @filelist_parser
+    file.items.first.should be_an_instance_of @file_parser
+    file.items.first.parents.first.should be_an_instance_of @parentref_parser    
+  end  
 end

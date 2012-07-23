@@ -1,0 +1,35 @@
+{
+    "id": "FileList",
+    "type": "object",
+    "description": "A list of files.",
+    "properties": {
+        "etag": {
+            "type": "string",
+            "description": "The ETag of the list."
+        },
+        "items": {
+            "type": "array",
+            "description": "The actual list of files.",
+            "items": {
+                "$ref": "#File"
+            }
+        },
+        "kind": {
+            "type": "string",
+            "description": "This is always drive#fileList.",
+            "default": "drive#fileList"
+        },
+        "nextLink": {
+            "type": "string",
+            "description": "A link to the next page of files."
+        },
+        "nextPageToken": {
+            "type": "string",
+            "description": "The page token for the next page of files."
+        },
+        "selfLink": {
+            "type": "string",
+            "description": "A link back to this list."
+        }
+    }
+}
