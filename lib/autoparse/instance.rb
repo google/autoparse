@@ -65,6 +65,25 @@ module AutoParse
       )
     end
 
+    def self.property(property_name)
+      property_key = self.keys[property_name] || property_name
+      schema_class = self.properties[property_key]
+      if !schema_class
+        if self.data[property_name]
+          schema_class = AutoParse.generate(self.data[property_name], :parent => self)
+        else
+          schema_class = self.additional_properties_schema
+        end
+      end
+      if schema_class.data['$ref']
+        # Dereference the schema if necessary.
+        schema_class = schema_class.dereference
+        # Avoid this dereference in the future.
+        self.properties[property_key] = schema_class
+      end
+      return schema_class
+    end
+    
     def self.keys
       return @keys ||= (
         if self.superclass.ancestors.include?(::AutoParse::Instance)
@@ -324,41 +343,21 @@ module AutoParse
 
     def __get__(property_name)
       property_key = self.class.keys[property_name] || property_name
-
-      schema_class = self.class.properties[property_key]
-      schema_class = self.class.additional_properties_schema if !schema_class
+      schema_class = self.class.property(property_name)
       if !schema_class
         @data[property_key]
       else
-        if schema_class.data['$ref']
-          # Dereference the schema if necessary.
-          schema_class = schema_class.dereference
-          # Avoid this dereference in the future.
-          self.class.properties[property_key] = schema_class
-        end
-
         value = @data[property_key] || schema_class.data['default']
-
         AutoParse.import(value, schema_class)
-      end
-    end
+      end    end
     protected :__get__
 
     def __set__(property_name, value)
       property_key = self.class.keys[property_name] || property_name
-
-      schema_class = self.class.properties[property_key]
-      schema_class = self.class.additional_properties_schema if !schema_class
+      schema_class = self.class.property(property_name)
       if !schema_class
         @data[property_key] = value
       else
-        if schema_class.data['$ref']
-          # Dereference the schema if necessary.
-          schema_class = schema_class.dereference
-          # Avoid this dereference in the future.
-          self.class.properties[property_key] = schema_class
-        end
-
         @data[property_key] = AutoParse.export(value, schema_class)
       end
     end

@@ -302,29 +302,18 @@ module AutoParse
     else
       (value || []).to_ary.dup
     end)
-    items_data = schema_class.data['items']
-    items_schema = AutoParse.generate(items_data, :parent => schema_class)
-    if items_schema.data['$ref']
-      # Dereference the schema if necessary.
-      items_schema = items_schema.dereference
-    end
+    items_schema = schema_class.property('items')
     value.map! do |item|
       AutoParse.import(item, items_schema)
     end
-    value
-  end
+    value  end
 
   def self.export_array(value, schema_class)
     if value == nil
       value
     elsif value.respond_to?(:to_ary)
       value = value.to_ary.dup
-      items_data = schema_class.data['items']
-      items_schema = AutoParse.generate(items_data, :parent => schema_class)
-      if items_schema.data['$ref']
-        # Dereference the schema if necessary.
-        items_schema = items_schema.dereference
-      end
+      items_schema = schema_class.property('items')
       value.map! do |item|
         AutoParse.export(item, items_schema)
       end
