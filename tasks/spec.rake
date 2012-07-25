@@ -26,7 +26,7 @@ namespace :spec do
 
   Spec::Rake::SpecTask.new(:normal) do |t|
     t.spec_files = FileList['spec/**/*_spec.rb']
-    t.spec_opts = ['--color', '--backtrace', '--format', 'specdoc']
+    t.spec_opts = ['--color', '--format', 'specdoc']
     t.rcov = false
   end
 

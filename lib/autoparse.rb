@@ -40,10 +40,7 @@ module AutoParse
       @uri.normalize! if @uri != nil
       @schema_data = schema_data
       if !self.uri && parent
-        @uri = parent.uri.dup
-        #if options[:property_name]
-        #  @uri.fragment = "#{@uri.fragment}_#{options[:property_name]}"
-        #end
+        @uri = parent.uri
       end
 
       def self.additional_properties_schema
@@ -72,7 +69,7 @@ module AutoParse
 
         # If the schema has no ID, it inherits the ID from the parent schema.
         property_schema_class =
-          AutoParse.generate(property_schema, :parent => self, :property_name => property_key)
+          AutoParse.generate(property_schema, :parent => self)
 
         self.properties[property_key] = property_schema_class
         self.keys[property_name] = property_key
@@ -145,55 +142,55 @@ module AutoParse
     return schema
   end
 
-  def self.import(value, property_name, schema_class, type=nil)
+  def self.import(value, schema_class, type=nil)
     type = schema_class.data['type'] if type == nil
     case type
     when 'string'
-      return AutoParse.import_string(value, property_name, schema_class)
+      return AutoParse.import_string(value, schema_class)
     when 'boolean'
-      return AutoParse.import_boolean(value, property_name, schema_class)
+      return AutoParse.import_boolean(value, schema_class)
     when 'integer'
-      return AutoParse.import_integer(value, property_name, schema_class)
+      return AutoParse.import_integer(value, schema_class)
     when 'number'
-      return AutoParse.import_number(value, property_name, schema_class)
+      return AutoParse.import_number(value, schema_class)
     when 'array'
-      return AutoParse.import_array(value, property_name, schema_class)
+      return AutoParse.import_array(value, schema_class)
     when 'object'
-      return AutoParse.import_object(value, property_name, schema_class)
+      return AutoParse.import_object(value, schema_class)
     when 'null'
       return nil
     when Array
-      return AutoParse.import_union(value, property_name, schema_class)
+      return AutoParse.import_union(value, schema_class)
     else
-      return AutoParse.import_any(value, property_name, schema_class)
+      return AutoParse.import_any(value, schema_class)
     end
   end
 
-  def self.export(value, property_name, schema_class, type=nil)
+  def self.export(value, schema_class, type=nil)
     type = schema_class.data['type'] if type == nil
     case type
     when 'string'
-      AutoParse.export_string(value, property_name, schema_class)
+      AutoParse.export_string(value, schema_class)
     when 'boolean'
-      AutoParse.export_boolean(value, property_name, schema_class)
+      AutoParse.export_boolean(value, schema_class)
     when 'integer'
-      AutoParse.export_integer(value, property_name, schema_class)
+      AutoParse.export_integer(value, schema_class)
     when 'number'
-      AutoParse.export_number(value, property_name, schema_class)
+      AutoParse.export_number(value, schema_class)
     when 'array'
-      AutoParse.export_array(value, property_name, schema_class)
+      AutoParse.export_array(value, schema_class)
     when 'object'
-      AutoParse.export_object(value, property_name, schema_class)
+      AutoParse.export_object(value, schema_class)
     when 'null'
       nil
     when Array
-      AutoParse.export_union(value, property_name, schema_class)
+      AutoParse.export_union(value, schema_class)
     else
-      AutoParse.export_any(value, property_name, schema_class)
+      AutoParse.export_any(value, schema_class)
     end
   end
 
-  def self.import_string(value, property_name, schema_class)
+  def self.import_string(value, schema_class)
     if value != nil
       format = schema_class.data['format']
       if format == 'byte'
@@ -212,7 +209,7 @@ module AutoParse
     end
   end
 
-  def self.export_string(value, property_name, schema_class)
+  def self.export_string(value, schema_class)
     format = schema_class.data['format']
     if format == 'byte'
       Base64.encode64(value)
@@ -239,7 +236,7 @@ module AutoParse
     end
   end
 
-  def self.import_boolean(value, property_name, schema_class)
+  def self.import_boolean(value, schema_class)
     case value.to_s.downcase
     when 'true', 'yes', 'y', 'on', '1'
       true
@@ -253,7 +250,7 @@ module AutoParse
     end
   end
 
-  def self.export_boolean(value, property_name, schema_class)
+  def self.export_boolean(value, schema_class)
     case value.to_s.downcase
     when 'true', 'yes', 'y', 'on', '1'
       true
@@ -266,7 +263,7 @@ module AutoParse
     end
   end
 
-  def self.import_number(value, property_name, schema_class)
+  def self.import_number(value, schema_class)
     if value == nil
       value
     else
@@ -274,7 +271,7 @@ module AutoParse
     end
   end
 
-  def self.export_number(value, property_name, schema_class)
+  def self.export_number(value, schema_class)
     if value == nil
       value
     else
@@ -282,7 +279,7 @@ module AutoParse
     end
   end
 
-  def self.import_integer(value, property_name, schema_class)
+  def self.import_integer(value, schema_class)
     if value == nil
       value
     else
@@ -290,7 +287,7 @@ module AutoParse
     end
   end
 
-  def self.export_integer(value, property_name, schema_class)
+  def self.export_integer(value, schema_class)
     if value == nil
       value
     else
@@ -298,28 +295,38 @@ module AutoParse
     end
   end
 
-  def self.import_array(value, property_name, schema_class)
+  def self.import_array(value, schema_class)
     value = (if value != nil && !value.respond_to?(:to_ary)
       raise TypeError,
         "Expected Array, got #{value.class}."
     else
       (value || []).to_ary.dup
     end)
-    items_schema = schema_class.property('items')
+    items_data = schema_class.data['items']
+    items_schema = AutoParse.generate(items_data, :parent => schema_class)
+    if items_schema.data['$ref']
+      # Dereference the schema if necessary.
+      items_schema = items_schema.dereference
+    end
     value.map! do |item|
-      AutoParse.import(item, property_name, items_schema)
+      AutoParse.import(item, items_schema)
     end
     value
   end
 
-  def self.export_array(value, property_name, schema_class)
+  def self.export_array(value, schema_class)
     if value == nil
       value
     elsif value.respond_to?(:to_ary)
       value = value.to_ary.dup
-      items_schema = schema_class.property('items')
+      items_data = schema_class.data['items']
+      items_schema = AutoParse.generate(items_data, :parent => schema_class)
+      if items_schema.data['$ref']
+        # Dereference the schema if necessary.
+        items_schema = items_schema.dereference
+      end
       value.map! do |item|
-        AutoParse.export(item, property_name, items_schema)
+        AutoParse.export(item, items_schema)
       end
       value
     else
@@ -327,11 +334,11 @@ module AutoParse
     end
   end
 
-  def self.import_object(value, property_name, schema_class)
+  def self.import_object(value, schema_class)
     value ? schema_class.new(value) : nil
   end
 
-  def self.export_object(value, property_name, schema_class)
+  def self.export_object(value, schema_class)
     # FIXME: Every field must be exported as well.
     if value.nil?
       nil
@@ -344,25 +351,25 @@ module AutoParse
     end
   end
 
-  def self.import_union(value, property_name, schema_class)
+  def self.import_union(value, schema_class)
     import_type = match_type(
       value, schema_class.data['type'], schema_class
     )
-    AutoParse.import(value, property_name, schema_class, import_type)
+    AutoParse.import(value, schema_class, import_type)
   end
 
-  def self.export_union(value, property_name, schema_class)
+  def self.export_union(value, schema_class)
     export_type = match_type(
       value, schema_class.data['type'], schema_class
     )
-    AutoParse.export(value, property_name, schema_class, export_type)
+    AutoParse.export(value, schema_class, export_type)
   end
 
-  def self.import_any(value, property_name, schema_class)
+  def self.import_any(value, schema_class)
     value
   end
 
-  def self.export_any(value, property_name, schema_class)
+  def self.export_any(value, schema_class)
     value
   end
 
