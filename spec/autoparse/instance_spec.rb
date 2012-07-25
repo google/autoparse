@@ -22,6 +22,7 @@ require 'autoparse'
 require 'addressable/uri'
 
 describe AutoParse::Instance, 'with an empty schema' do
+  include JSONMatchers
   before do
     @parser = AutoParse::EMPTY_SCHEMA
   end
@@ -65,11 +66,12 @@ describe AutoParse::Instance, 'with an empty schema' do
 
   it 'should convert to a JSON string' do
     instance = @parser.new({"be" => "brief"})
-    instance.to_json.should == '{"be":"brief"}'
+    instance.to_json.should be_json '{"be":"brief"}'
   end
 end
 
 describe AutoParse::Instance, 'with the geo schema' do
+  include JSONMatchers
   before do
     @uri = Addressable::URI.new(
       :scheme => 'file',
@@ -144,11 +146,12 @@ describe AutoParse::Instance, 'with the geo schema' do
       "latitude" => 37.422,
       "longitude" => -122.084
     })
-    instance.to_json.should == '{"latitude":37.422,"longitude":-122.084}'
+    instance.to_json.should be_json '{"latitude":37.422,"longitude":-122.084}'
   end
 end
 
 describe AutoParse::Instance, 'with the address schema' do
+  include JSONMatchers
   before do
     @uri = Addressable::URI.new(
       :scheme => 'file',
@@ -264,6 +267,7 @@ describe AutoParse::Instance, 'with the address schema' do
 end
 
 describe AutoParse::Instance, 'with the person schema' do
+  include JSONMatchers
   before do
     @uri = Addressable::URI.new(
       :scheme => 'file',
@@ -362,11 +366,12 @@ describe AutoParse::Instance, 'with the person schema' do
       "name" => "Bob Aman",
       "age" => 29
     })
-    instance.to_json.should == '{"name":"Bob Aman","age":29}'
+    instance.to_json.should be_json '{"name":"Bob Aman","age":29}'
   end
 end
 
 describe AutoParse::Instance, 'with the adult schema' do
+  include JSONMatchers
   before do
     @person_uri = Addressable::URI.new(
       :scheme => 'file',
@@ -478,11 +483,12 @@ describe AutoParse::Instance, 'with the adult schema' do
       "name" => "Bob Aman",
       "age" => 29
     })
-    instance.to_json.should == '{"name":"Bob Aman","age":29}'
+    instance.to_json.should be_json '{"name":"Bob Aman","age":29}'
   end
 end
 
 describe AutoParse::Instance, 'with the user list schema' do
+  include JSONMatchers
   before do
     @person_uri = Addressable::URI.new(
       :scheme => 'file',
@@ -654,13 +660,14 @@ describe AutoParse::Instance, 'with the user list schema' do
         }
       }
     })
-    instance.to_json.should == (
+    instance.to_json.should be_json (
       '{"users":{"bobaman@google.com":{"name":"Bob Aman","age":29}}}'
     )
   end
 end
 
 describe AutoParse::Instance, 'with the positive schema' do
+  include JSONMatchers
   before do
     @positive_uri = Addressable::URI.new(
       :scheme => 'file',
@@ -692,6 +699,7 @@ describe AutoParse::Instance, 'with the positive schema' do
 end
 
 describe AutoParse::Instance, 'with the account schema' do
+  include JSONMatchers
   before do
     @positive_uri = Addressable::URI.new(
       :scheme => 'file',
@@ -797,11 +805,12 @@ describe AutoParse::Instance, 'with the account schema' do
       "accountNumber" => "12345",
       "balance" => 1000
     })
-    instance.to_json.should == '{"accountNumber":"12345","balance":1000}'
+    instance.to_json.should be_json '{"accountNumber":"12345","balance":1000}'
   end
 end
 
 describe AutoParse::Instance, 'with the card schema' do
+  include JSONMatchers
   before do
     @address_uri = Addressable::URI.new(
       :scheme => 'file',
@@ -1130,11 +1139,12 @@ describe AutoParse::Instance, 'with the card schema' do
       "givenName" => "Robert",
       "familyName" => "Aman"
     })
-    instance.to_json.should == '{"givenName":"Robert","familyName":"Aman"}'
+    instance.to_json.should be_json '{"givenName":"Robert","familyName":"Aman"}'
   end
 end
 
 describe AutoParse::Instance, 'with the calendar schema' do
+  include JSONMatchers
   before do
     @geo_uri = Addressable::URI.new(
       :scheme => 'file',
@@ -1307,7 +1317,7 @@ describe AutoParse::Instance, 'with the calendar schema' do
       "dtend" => "1592-03-14T23:59:59Z",
       "summary" => "Pi Day"
     })
-    instance.to_json.should == (
+    instance.to_json.should be_json (
       '{"dtend":"1592-03-14T23:59:59Z",' +
       '"dtstart":"1592-03-14T00:00:00Z",'+
       '"summary":"Pi Day"}'
@@ -1316,6 +1326,7 @@ describe AutoParse::Instance, 'with the calendar schema' do
 end
 
 describe AutoParse::Instance, 'with the node schema' do
+  include JSONMatchers
   before do
     @uri = Addressable::URI.new(
       :scheme => 'file',
@@ -1450,6 +1461,6 @@ describe AutoParse::Instance, 'with the node schema' do
       "left" => nil,
       "right" => nil
     })
-    instance.to_json.should == '{"left":null,"value":42,"right":null}'
+    instance.to_json.should be_json '{"left":null,"value":42,"right":null}'
   end
 end
