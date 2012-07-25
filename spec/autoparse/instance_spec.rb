@@ -1463,4 +1463,46 @@ describe AutoParse::Instance, 'with the node schema' do
     })
     instance.to_json.should be_json '{"left":null,"value":42,"right":null}'
   end
+
+  describe AutoParse::Instance, 'with the file schema' do
+
+    def load_schema(file, uri)
+      json = JSON.parse(File.read(file))
+      return AutoParse.generate(json, :uri => Addressable::URI.parse(uri))
+    end    
+
+    before do
+      @filelist_parser = load_schema('spec/data/filelist.json', 'https://www.googleapis.com/drive/v2/#FileList')
+      @file_parser = load_schema('spec/data/file.json', 'https://www.googleapis.com/drive/v2/#File')
+      @parentref_parser = load_schema('spec/data/parentref.json', 'https://www.googleapis.com/drive/v2/#ParentReference')
+    end
+
+    it 'should not redefine parent schemas' do
+      data = {
+       "kind" => "drive#fileList",
+       "items" => [
+        {
+         "kind" => "drive#file",
+         "id" => "0Bz2X2-r-Ou9fYTJFLVFYZENzMjA",
+         "parents" => [
+          {
+           "kind" => "drive#parentReference",
+           "id" => "0AD2X2-r-Ou9fUk9PVA",
+          }
+         ],
+        }
+       ]
+      }
+
+      file = @filelist_parser.new(data)
+      file.should be_an_instance_of @filelist_parser
+      file.items.first.should be_an_instance_of @file_parser
+      file.items.first.parents.first.should be_an_instance_of @parentref_parser
+
+      file = @filelist_parser.new(data)
+      file.should be_an_instance_of @filelist_parser
+      file.items.first.should be_an_instance_of @file_parser
+      file.items.first.parents.first.should be_an_instance_of @parentref_parser    
+    end
+  end
 end
