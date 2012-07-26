@@ -1,0 +1,28 @@
+{
+    "id": "ParentReference",
+    "type": "object",
+    "description": "A reference to a file's parent.",
+    "properties": {
+        "id": {
+            "type": "string",
+            "description": "The ID of the parent."
+        },
+        "isRoot": {
+            "type": "boolean",
+            "description": "Whether or not the parent is the root folder."
+        },
+        "kind": {
+            "type": "string",
+            "description": "This is always drive#parentReference.",
+            "default": "drive#parentReference"
+        },
+        "parentLink": {
+            "type": "string",
+            "description": "A link to the parent."
+        },
+        "selfLink": {
+            "type": "string",
+            "description": "A link back to this reference."
+        }
+    }
+}

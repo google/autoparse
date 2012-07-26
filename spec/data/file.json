@@ -1,0 +1,173 @@
+{
+    "id": "File",
+    "type": "object",
+    "description": "The metadata for a file.",
+    "properties": {
+        "alternateLink": {
+            "type": "string",
+            "description": "A link for opening the file in a browser."
+        },
+        "createdDate": {
+            "type": "string",
+            "description": "Create time for this file (formatted ISO8601 timestamp).",
+            "format": "date-time"
+        },
+        "description": {
+            "type": "string",
+            "description": "A short description of the file."
+        },
+        "downloadUrl": {
+            "type": "string",
+            "description": "Short term download URL for the file. This will only be populated on files with content stored in Drive."
+        },
+        "editable": {
+            "type": "boolean",
+            "description": "Whether the file can be edited by the current user."
+        },
+        "embedLink": {
+            "type": "string",
+            "description": "A link for embedding the file."
+        },
+        "etag": {
+            "type": "string",
+            "description": "ETag of the file."
+        },
+        "exportLinks": {
+            "type": "object",
+            "description": "Links for exporting Google Docs to specific formats.",
+            "additionalProperties": {
+                "type": "string",
+                "description": "A mapping from export format to URL"
+            }
+        },
+        "fileExtension": {
+            "type": "string",
+            "description": "The file extension used when downloading this file. This field is read only. To set the extension, include it on title when creating the file. This will only be populated on files with content stored in Drive."
+        },
+        "fileSize": {
+            "type": "string",
+            "description": "The size of the file in bytes. This will only be populated on files with content stored in Drive.",
+            "format": "int64"
+        },
+        "id": {
+            "type": "string",
+            "description": "The id of the file."
+        },
+        "indexableText": {
+            "type": "object",
+            "description": "Indexable text attributes for the file (can only be written)",
+            "properties": {
+                "text": {
+                    "type": "string",
+                    "description": "The text to be indexed for this file"
+                }
+            }
+        },
+        "kind": {
+            "type": "string",
+            "description": "The type of file. This is always drive#file.",
+            "default": "drive#file"
+        },
+        "labels": {
+            "type": "object",
+            "description": "A group of labels for the file.",
+            "properties": {
+                "hidden": {
+                    "type": "boolean",
+                    "description": "Whether this file is hidden from the user."
+                },
+                "restricted": {
+                    "type": "boolean",
+                    "description": "Whether viewers are prevented from downloading this file."
+                },
+                "starred": {
+                    "type": "boolean",
+                    "description": "Whether this file is starred by the user."
+                },
+                "trashed": {
+                    "type": "boolean",
+                    "description": "Whether this file has been trashed."
+                },
+                "viewed": {
+                    "type": "boolean",
+                    "description": "Whether this file has been viewed by this user."
+                }
+            }
+        },
+        "lastModifyingUserName": {
+            "type": "string",
+            "description": "Name of the last user to modify this file. This will only be populated if a user has edited this file."
+        },
+        "lastViewedByMeDate": {
+            "type": "string",
+            "description": "Last time this file was viewed by the user (formatted RFC 3339 timestamp).",
+            "format": "date-time"
+        },
+        "md5Checksum": {
+            "type": "string",
+            "description": "An MD5 checksum for the content of this file. This will only be populated on files with content stored in Drive."
+        },
+        "mimeType": {
+            "type": "string",
+            "description": "The MIME type of the file."
+        },
+        "modifiedByMeDate": {
+            "type": "string",
+            "description": "Last time this file was modified by the user (formatted RFC 3339 timestamp).",
+            "format": "date-time"
+        },
+        "modifiedDate": {
+            "type": "string",
+            "description": "Last time this file was modified by anyone (formatted RFC 3339 timestamp).",
+            "format": "date-time"
+        },
+        "originalFilename": {
+            "type": "string",
+            "description": "The filename when uploading this file. This will only be populated on files with content stored in Drive."
+        },
+        "ownerNames": {
+            "type": "array",
+            "description": "Name(s) of the owner(s) of this file.",
+            "items": {
+                "type": "string"
+            }
+        },
+        "parents": {
+            "type": "array",
+            "description": "Collection of parent folders which contain this file.\nSetting this field will put the file in all of the provided folders. On insert, if no folders are provided, the file will be placed in the default root folder.",
+            "items": {
+                "$ref": "#ParentReference"
+            }
+        },
+        "permissionsLink": {
+            "type": "string",
+            "description": "A link to the permissions collection."
+        },
+        "quotaBytesUsed": {
+            "type": "string",
+            "description": "The number of quota bytes used by this file.",
+            "format": "int64"
+        },
+        "selfLink": {
+            "type": "string",
+            "description": "A link back to this file."
+        },
+        "sharedWithMeDate": {
+            "type": "string",
+            "description": "Time at which this file was shared with the user (formatted RFC 3339 timestamp).",
+            "format": "date-time"
+        },
+        "thumbnailLink": {
+            "type": "string",
+            "description": "A link to the file's thumbnail."
+        },
+        "title": {
+            "type": "string",
+            "description": "The title of this file."
+        },
+        "writersCanShare": {
+            "type": "boolean",
+            "description": "Whether writers can share the document with other users."
+        }
+    }
+}
