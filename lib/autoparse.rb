@@ -231,8 +231,7 @@ module AutoParse
     elsif value.kind_of?(Symbol)
       value.to_s
     else
-      raise TypeError,
-        "Expected String or Symbol, got #{value.class}."
+      raise TypeError, "Expected String or Symbol, got #{value.class}."
     end
   end
 
@@ -242,11 +241,10 @@ module AutoParse
       true
     when 'false', 'no', 'n', 'off', '0'
       false
-    when 'nil', 'null', 'undefined'
+    when 'nil', 'null', 'undefined', ''
       nil
     else
-      raise TypeError,
-        "Expected boolean, got #{value.class}."
+      raise TypeError, "Expected boolean, got #{value.class}."
     end
   end
 
@@ -256,7 +254,7 @@ module AutoParse
       true
     when 'false', 'no', 'n', 'off', '0'
       false
-    when 'nil', 'null', 'undefined'
+    when 'nil', 'null', 'undefined', ''
       nil
     else
       raise TypeError, "Expected boolean, got #{value.class}."

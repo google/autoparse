@@ -347,7 +347,11 @@ module AutoParse
       if !schema_class
         @data[property_key]
       else
-        value = @data[property_key] || schema_class.data['default']
+        if @data.has_key?(property_key)
+          value = @data[property_key]
+        else
+          value = schema_class.data['default']
+        end
         AutoParse.import(value, schema_class)
       end    end
     protected :__get__

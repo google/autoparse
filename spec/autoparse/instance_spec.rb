@@ -1463,46 +1463,130 @@ describe AutoParse::Instance, 'with the node schema' do
     })
     instance.to_json.should be_json '{"left":null,"value":42,"right":null}'
   end
+end
 
-  describe AutoParse::Instance, 'with the file schema' do
+describe AutoParse::Instance, 'with the booleans schema' do
+  include JSONMatchers
+  before do
+    @uri = Addressable::URI.new(
+      :scheme => 'file',
+      :host => '',
+      :path => File.expand_path(File.join(spec_dir, './data/booleans.json'))
+    )
+    @schema_data = JSON.parse(File.open(@uri.path, 'r') { |f| f.read })
+    @parser = AutoParse.generate(@schema_data, :uri => @uri)
+  end
 
-    def load_schema(file, uri)
-      json = JSON.parse(File.read(file))
-      return AutoParse.generate(json, :uri => Addressable::URI.parse(uri))
-    end    
+  it 'should have the correct URI' do
+    @parser.uri.should === @uri
+  end
 
-    before do
-      @filelist_parser = load_schema('spec/data/filelist.json', 'https://www.googleapis.com/drive/v2/#FileList')
-      @file_parser = load_schema('spec/data/file.json', 'https://www.googleapis.com/drive/v2/#File')
-      @parentref_parser = load_schema('spec/data/parentref.json', 'https://www.googleapis.com/drive/v2/#ParentReference')
-    end
+  it 'should accept a valid booleans input' do
+    instance = @parser.new({
+      "guaranteed" => false,
+      "truthy" => true,
+      "accurate" => false
+    })
+    instance.should be_valid
+  end
 
-    it 'should not redefine parent schemas' do
-      data = {
-       "kind" => "drive#fileList",
-       "items" => [
+  it 'should expose values via generated accessors' do
+    instance = @parser.new({
+      "guaranteed" => false,
+      "truthy" => true,
+      "accurate" => false
+    })
+    instance.truthy.should == true
+    instance.untrue.should == false
+    instance.accurate.should == false
+    instance.maybe.should == nil
+    instance.guaranteed.should == false
+  end
+
+  it 'should alter output structure via generated mutators' do
+    instance = @parser.new
+    instance.truthy = true
+    instance.untrue = false
+    instance.accurate = false
+    instance.guaranteed = false
+    instance.to_hash.should == {
+      "truthy" => true,
+      "untrue" => false,
+      "accurate" => false,
+      "guaranteed" => false
+    }
+  end
+
+  it 'should be coerceable to a Hash value' do
+    instance = @parser.new({
+      "guaranteed" => false,
+      "truthy" => true,
+      "accurate" => false
+    })
+    instance.to_hash.should == {
+      "guaranteed" => false,
+      "truthy" => true,
+      "accurate" => false
+    }
+  end
+
+  it 'should convert to a JSON string' do
+    instance = @parser.new({
+      "left" => nil,
+      "value" => 42,
+      "right" => nil
+    })
+    instance.to_json.should be_json '{"left":null,"value":42,"right":null}'
+  end
+end
+
+describe AutoParse::Instance, 'with the file schema' do
+  def load_schema(file, uri)
+    json = JSON.parse(File.read(file))
+    return AutoParse.generate(json, :uri => Addressable::URI.parse(uri))
+  end
+
+  before do
+    @data = {
+     "kind" => "drive#fileList",
+     "items" => [
+      {
+       "kind" => "drive#file",
+       "id" => "0Bz2X2-r-Ou9fYTJFLVFYZENzMjA",
+       "editable" => "false",
+       "parents" => [
         {
-         "kind" => "drive#file",
-         "id" => "0Bz2X2-r-Ou9fYTJFLVFYZENzMjA",
-         "parents" => [
-          {
-           "kind" => "drive#parentReference",
-           "id" => "0AD2X2-r-Ou9fUk9PVA",
-          }
-         ],
+         "kind" => "drive#parentReference",
+         "id" => "0AD2X2-r-Ou9fUk9PVA",
+         "isRoot" => "true"
         }
        ]
       }
+     ]
+    }
+    @filelist_parser = load_schema('spec/data/filelist.json', 'https://www.googleapis.com/drive/v2/#FileList')
+    @file_parser = load_schema('spec/data/file.json', 'https://www.googleapis.com/drive/v2/#File')
+    @parentref_parser = load_schema('spec/data/parentref.json', 'https://www.googleapis.com/drive/v2/#ParentReference')
+  end
 
-      file = @filelist_parser.new(data)
-      file.should be_an_instance_of @filelist_parser
-      file.items.first.should be_an_instance_of @file_parser
-      file.items.first.parents.first.should be_an_instance_of @parentref_parser
+  it 'should not redefine parent schemas' do
+    file = @filelist_parser.new(@data)
+    file.should be_an_instance_of @filelist_parser
+    file.items.first.should be_an_instance_of @file_parser
+    file.items.first.parents.first.should be_an_instance_of @parentref_parser
 
-      file = @filelist_parser.new(data)
-      file.should be_an_instance_of @filelist_parser
-      file.items.first.should be_an_instance_of @file_parser
-      file.items.first.parents.first.should be_an_instance_of @parentref_parser    
-    end
+    file = @filelist_parser.new(@data)
+    file.should be_an_instance_of @filelist_parser
+    file.items.first.should be_an_instance_of @file_parser
+    file.items.first.parents.first.should be_an_instance_of @parentref_parser
+  end
+
+  it 'should handle booleans correctly' do
+    file = @filelist_parser.new(@data)
+    file.should be_an_instance_of @filelist_parser
+    file.items.first.should be_an_instance_of @file_parser
+    file.items.first.editable.should == false
+    file.items.first.parents.first.should be_an_instance_of @parentref_parser
+    file.items.first.parents.first.is_root.should == true
   end
 end
