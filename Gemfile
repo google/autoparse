@@ -5,7 +5,7 @@ gem 'multi_json', '>= 1.0.0'
 gem 'extlib', '>= 0.9.15'
 
 group :development do
-  # gem 'launchy', '>= 2.0.0'
+  gem 'launchy', '>= 2.1.1'
   gem 'yard'
   gem 'redcarpet'
 end
