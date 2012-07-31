@@ -1,3 +1,8 @@
+# 0.3.2
+
+* Fixed issue with class redefinition
+* Updated Launchy dependency
+
 # 0.3.1
 
 * Replaced json gem dependency with multi_json
