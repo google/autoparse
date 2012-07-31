@@ -1,5 +1,6 @@
 # 0.3.2
 
+* Fixed issue with booleans and default values
 * Fixed issue with class redefinition
 * Updated Launchy dependency
 
