@@ -15,6 +15,8 @@
 require 'autoparse/instance'
 require 'autoparse/version'
 require 'addressable/uri'
+require 'multi_json'
+require 'compat/multi_json'
 
 module AutoParse
   def self.schemas
@@ -332,7 +334,7 @@ module AutoParse
     elsif value.respond_to?(:to_hash)
       value.to_hash
     elsif value.respond_to?(:to_json)
-      MultiJson.decode(value.to_json)
+      MultiJson.load(value.to_json)
     else
       raise TypeError, "Expected Hash, got #{value.class}."
     end

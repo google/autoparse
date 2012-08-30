@@ -14,6 +14,7 @@
 
 
 require 'multi_json'
+require 'compat/multi_json'
 require 'time'
 require 'autoparse/inflection'
 require 'addressable/uri'
@@ -458,7 +459,7 @@ module AutoParse
     #   Ignores extra arguments to avoid throwing errors w/ certain JSON
     #   libraries.
     def to_json(*args)
-      return MultiJson.encode(self.to_hash)
+      return MultiJson.dump(self.to_hash)
     end
 
     ##
