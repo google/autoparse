@@ -1504,5 +1504,47 @@ describe AutoParse::Instance, 'with the node schema' do
       file.items.first.should be_an_instance_of @file_parser
       file.items.first.parents.first.should be_an_instance_of @parentref_parser    
     end
+
+
+    it 'should not redefine the parent when accessing anonymous children' do
+      file_json = {
+        "kind" => "drive#file",
+        "id" => "0Bz2X2-r-Ou9fYTJFLVFYZENzMjA",
+        "parents" => [
+          {
+            "kind" => "drive#parentReference",
+            "id" => "0AD2X2-r-Ou9fUk9PVA",
+         }]        
+      }
+      
+      list_json = {
+       "kind" => "drive#fileList",
+       "items" => [
+        {
+         "kind" => "drive#file",
+         "id" => "0Bz2X2-r-Ou9fYTJFLVFYZENzMjA",
+         "parents" => [
+          {
+           "kind" => "drive#parentReference",
+           "id" => "0AD2X2-r-Ou9fUk9PVA",
+          }
+         ],
+        }
+       ]
+      }
+
+      file = @file_parser.new(file_json)
+      file.should be_an_instance_of @file_parser
+      file.parents.first.should be_an_instance_of @parentref_parser
+
+      # Regression check for bug where accessing the parents property would redefine
+      # file. This resulted in an inability to parse that type later on, such as when
+      # used in the items array.
+      list = @filelist_parser.new(list_json)
+      list.should be_an_instance_of @filelist_parser
+      list.items.first.should be_an_instance_of @file_parser
+      list.items.first.parents.first.should be_an_instance_of @parentref_parser
+    end
+
   end
 end
