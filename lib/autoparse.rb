@@ -138,7 +138,7 @@ module AutoParse
     end
 
     # Register the new schema.
-    self.schemas[schema.uri] = schema
+    self.schemas[schema.uri] = schema unless parent && parent.uri == schema.uri
     return schema
   end
 
