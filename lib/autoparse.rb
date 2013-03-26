@@ -15,6 +15,8 @@
 require 'autoparse/instance'
 require 'autoparse/version'
 require 'addressable/uri'
+require 'multi_json'
+require 'compat/multi_json'
 
 module AutoParse
   def self.schemas
@@ -231,8 +233,7 @@ module AutoParse
     elsif value.kind_of?(Symbol)
       value.to_s
     else
-      raise TypeError,
-        "Expected String or Symbol, got #{value.class}."
+      raise TypeError, "Expected String or Symbol, got #{value.class}."
     end
   end
 
@@ -242,11 +243,10 @@ module AutoParse
       true
     when 'false', 'no', 'n', 'off', '0'
       false
-    when 'nil', 'null', 'undefined'
+    when 'nil', 'null', 'undefined', ''
       nil
     else
-      raise TypeError,
-        "Expected boolean, got #{value.class}."
+      raise TypeError, "Expected boolean, got #{value.class}."
     end
   end
 
@@ -256,7 +256,7 @@ module AutoParse
       true
     when 'false', 'no', 'n', 'off', '0'
       false
-    when 'nil', 'null', 'undefined'
+    when 'nil', 'null', 'undefined', ''
       nil
     else
       raise TypeError, "Expected boolean, got #{value.class}."
@@ -334,7 +334,7 @@ module AutoParse
     elsif value.respond_to?(:to_hash)
       value.to_hash
     elsif value.respond_to?(:to_json)
-      MultiJson.decode(value.to_json)
+      MultiJson.load(value.to_json)
     else
       raise TypeError, "Expected Hash, got #{value.class}."
     end

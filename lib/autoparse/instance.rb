@@ -14,6 +14,7 @@
 
 
 require 'multi_json'
+require 'compat/multi_json'
 require 'time'
 require 'autoparse/inflection'
 require 'addressable/uri'
@@ -347,7 +348,11 @@ module AutoParse
       if !schema_class
         @data[property_key]
       else
-        value = @data[property_key] || schema_class.data['default']
+        if @data.has_key?(property_key)
+          value = @data[property_key]
+        else
+          value = schema_class.data['default']
+        end
         AutoParse.import(value, schema_class)
       end    end
     protected :__get__
@@ -454,7 +459,7 @@ module AutoParse
     #   Ignores extra arguments to avoid throwing errors w/ certain JSON
     #   libraries.
     def to_json(*args)
-      return MultiJson.encode(self.to_hash)
+      return MultiJson.dump(self.to_hash)
     end
 
     ##

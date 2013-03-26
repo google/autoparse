@@ -1,0 +1,25 @@
+{
+  "description":"A bunch of booleans",
+  "type":"object",
+  "properties": {
+    "truthy": {
+      "type": "boolean",
+      "default": null
+    },
+    "untrue": {
+      "type": "boolean",
+      "default": false
+    },
+    "accurate": {
+      "type": "boolean",
+      "default": true
+    },
+    "maybe": {
+      "type": "boolean"
+    },
+    "guaranteed": {
+      "type": "boolean",
+      "required": true
+    }
+  }
+}
