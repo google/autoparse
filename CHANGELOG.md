@@ -1,3 +1,7 @@
+# 0.3.3
+
+* Fixed issue with parent class redefinition
+
 # 0.3.2
 
 * Fixed issue with booleans and default values
